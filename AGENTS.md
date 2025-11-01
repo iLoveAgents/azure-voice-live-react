@@ -13,36 +13,59 @@ Professional React library for Azure AI Foundry Voice Live API. TypeScript stric
 # Install library dependencies
 npm install
 
-# Install example app dependencies
+# Install example app dependencies (or use: npm run example:install)
 cd example && npm install
 ```
 
-### Development Loop (Recommended)
+### Two Development Modes
+
+**Mode 1: Fast Development (Recommended for Daily Work)**
 ```bash
-# Start example app in dev mode
-cd example
-npm run dev
+# From library root
+npm run example
+
+# Or from example directory
+cd example && npm run dev
 ```
 
-The example app uses a Vite alias pointing to `../index.ts`. This means:
-- Edit library code in project root
-- Changes reflect instantly in example app (hot reload)
-- No build step needed during development
-- Test in real React environment immediately
+Uses Vite alias pointing to `../index.ts`:
+- Edit library code, see changes instantly (hot reload)
+- No build step needed
+- Fastest iteration speed
+- **Use this for feature development and bug fixes**
+
+**Mode 2: Production Testing (Before Publishing)**
+```bash
+# From library root - builds then runs example against dist
+npm run example:build-mode
+
+# Or manually
+npm run build
+cd example && npm run dev:dist
+```
+
+Uses built output from `dist/`:
+- Tests the actual package users will install
+- Catches build-only issues
+- Verifies exports and types work correctly
+- **Use this before committing or publishing**
 
 ### Testing Changes
-1. Edit library files in project root (hooks, components, utils, etc.)
-2. Example app auto-reloads with your changes
+1. Edit library files in project root
+2. Example app auto-reloads (dev mode) or restart server (dist mode)
 3. Open http://localhost:3000 to test
 4. Enter Azure credentials and test functionality
 
 ### Before Committing
 ```bash
-# Verify TypeScript compilation
+# Build and verify no errors
 npm run build
 
-# Check for type errors
-npx tsc --noEmit
+# Test against built output
+npm run example:build-mode
+
+# Optional: Test the actual npm package
+npm run test:pack
 ```
 
 ## Project Structure

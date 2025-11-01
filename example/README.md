@@ -1,56 +1,45 @@
-# Azure Voice Live React - Example App
+# Example App
 
-This is a basic test application for the `@iloveagents/azure-voice-live-react` library.
+Test application for the `@iloveagents/azure-voice-live-react` library.
 
-## Purpose
+## Quick Start
 
-This example demonstrates:
-- Using the `createCallCenterConfig` preset
-- Connecting to Azure AI Foundry Voice Live API
-- Displaying avatar video stream
-- Managing connection state with `useVoiceLive` hook
-
-## Running the Example
-
-1. Install dependencies:
 ```bash
+# Install dependencies
 npm install
-```
 
-2. Start the development server:
-```bash
+# Run example app
 npm run dev
 ```
 
-3. Open http://localhost:3000 in your browser
+Open http://localhost:3000 and enter your Azure credentials.
 
-4. Enter your Azure credentials:
-   - Azure Resource Name (from Azure AI Foundry portal)
-   - API Key (from Azure AI Foundry portal)
-   - Custom instructions (optional)
+## What This Demonstrates
 
-5. Click "Connect" to start the Voice Live session
-
-## Testing the Library
-
-This example app uses a Vite alias that points directly to the parent library source code (`../index.ts`). This means:
-
-- Changes to the library code are reflected immediately (hot reload)
-- No need to build or publish the library for testing
-- You can test library features in a real React application
+- Using `createCallCenterConfig` preset
+- Connecting to Azure Voice Live API
+- Displaying avatar video stream
+- Managing connection with `useVoiceLive` hook
 
 ## Configuration
 
-The example uses the `createCallCenterConfig` preset which includes:
+The example uses `createCallCenterConfig` preset with:
 - Semantic VAD for turn detection
 - Echo cancellation and noise reduction
 - HD voice quality
-- Optimized for customer service scenarios
 
-You can modify the configuration in [src/App.tsx](src/App.tsx) to test other presets or custom configurations.
+Edit [src/App.tsx](src/App.tsx) to test other presets or configurations.
+
+## For Library Developers
+
+This example is used for library development and testing:
+
+- **Dev mode**: `npm run dev` - Uses source code via alias, hot reload
+- **Dist mode**: `npm run dev:dist` - Tests built output from `../dist/`
+
+See [../DEV.md](../DEV.md) for complete development guide.
 
 ## Requirements
 
-- Valid Azure AI Foundry account
-- Azure Voice Live API access
+- Azure AI Foundry account with Voice Live API access
 - Modern browser with WebRTC support
