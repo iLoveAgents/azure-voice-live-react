@@ -1,0 +1,64 @@
+{
+  "name": "@iloveagents/azure-voice-live-react",
+  "version": "0.1.0",
+  "description": "React library for Azure AI Foundry Voice Live API. Full TypeScript support with optimized presets and configuration helpers.",
+  "keywords": [
+    "azure",
+    "azure-ai-foundry",
+    "voice-live",
+    "react",
+    "typescript",
+    "voice-ai",
+    "realtime-ai",
+    "gpt-realtime",
+    "speech-to-text",
+    "text-to-speech",
+    "avatar",
+    "webrtc",
+    "react-hooks"
+  ],
+  "author": "iloveagents",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/iloveagents/azure-voice-live-react.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iloveagents/azure-voice-live-react/issues"
+  },
+  "homepage": "https://github.com/iloveagents/azure-voice-live-react#readme",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  }
+}

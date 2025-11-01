@@ -1,0 +1,21 @@
+# Source files (only ship dist)
+*.ts
+*.tsx
+!*.d.ts
+
+# Config files
+tsconfig.json
+tsup.config.ts
+.gitignore
+
+# Development
+node_modules
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
