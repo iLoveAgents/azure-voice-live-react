@@ -6,10 +6,25 @@
 # Config files
 tsconfig.json
 tsup.config.ts
+vitest.config.ts
+.eslintrc.json
+.prettierrc.json
+.prettierignore
 .gitignore
 
-# Development
+# Development files
+playground/
+DEV.md
+AGENTS.md
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Dependencies
 node_modules
+
+# Editor
 .vscode
 .idea
 
@@ -19,3 +34,6 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Build artifacts
+*.tgz

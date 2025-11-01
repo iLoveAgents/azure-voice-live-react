@@ -5,51 +5,51 @@ Guide for developing and contributing to the `@iloveagents/azure-voice-live-reac
 ## Quick Start
 
 ```bash
-# Install dependencies
+# Install all dependencies (library + playground workspace)
 npm install
 
-# Install example app dependencies
-npm run example:install
-
 # Start development with hot reload
-npm run example
+npm run dev
 ```
 
 Open http://localhost:3000 and enter your Azure credentials to test.
 
 ## Development Workflow
 
+This project uses **npm workspaces** with a monorepo structure. The playground is a workspace for development and testing.
+
 ### Two Development Modes
 
-**Mode 1: Fast Development (Recommended)**
+**Dev Mode (Fast Iteration)**
 
 ```bash
-npm run example
+npm run dev
 ```
 
 - Uses source code directly via Vite alias (`../index.ts`)
 - Hot reload - changes reflect instantly
 - No build step needed
-- **Use this for feature development and bug fixes**
+- **Use this for daily development**
 
-**Mode 2: Production Testing (Before Publishing)**
+**Dist Mode (Production Testing)**
 
 ```bash
-npm run example:build-mode
+npm run dev:dist
 ```
 
-- Builds library to `dist/` then runs example
+- Builds library to `dist/` then runs playground
 - Tests the actual package users will install
 - Catches build-only issues
-- **Use this before committing or publishing**
+- **Use this before committing**
 
 ### Development Loop
 
 1. **Make changes** to library code in project root
-2. **Test instantly** - Example app auto-reloads (dev mode)
-3. **Verify build** - Run `npm run build` to check for errors
-4. **Test built output** - Run `npm run example:build-mode`
-5. **Commit** changes
+2. **Test instantly** - Playground auto-reloads (dev mode)
+3. **Run tests** - `npm run test`
+4. **Check linting** - `npm run lint`
+5. **Test built output** - `npm run dev:dist`
+6. **Commit** changes
 
 ### Before Committing
 
@@ -57,21 +57,30 @@ npm run example:build-mode
 # Build and verify no errors
 npm run build
 
-# Test against built output
-npm run example:build-mode
+# Run tests
+npm run test
 
-# Optional: Test actual npm package
-npm run test:pack
+# Check code quality
+npm run lint
+
+# Format code
+npm run format
+
+# Test against built output
+npm run dev:dist
 ```
 
 ## Project Structure
 
-```
+```txt
 azure-voice-live-react/
 ├── index.ts                    # Main library exports
-├── package.json                # npm package configuration
+├── package.json                # npm package configuration (with workspaces)
 ├── tsconfig.json              # TypeScript strict mode config
 ├── tsup.config.ts             # Build config (ESM + CJS)
+├── vitest.config.ts           # Test configuration
+├── .eslintrc.json             # ESLint configuration
+├── .prettierrc.json           # Prettier configuration
 │
 ├── types/                     # TypeScript definitions
 │   └── voice-live.types.ts   # Azure Voice Live API types
@@ -91,10 +100,11 @@ azure-voice-live-react/
 │   ├── sessionBuilder.ts     # Fluent builder
 │   ├── presets.ts            # Scenario presets
 │   ├── configHelpers.ts      # Configuration helpers
+│   ├── configHelpers.test.ts # Tests
 │   └── audioUtils.ts         # Audio utilities
 │
-└── example/                   # Development test app
-    ├── vite.config.ts         # Configured with alias
+└── playground/                # Development workspace (npm workspace)
+    ├── vite.config.ts         # Configured with dev/dist modes
     └── src/App.tsx            # Test UI
 ```
 
@@ -104,9 +114,9 @@ azure-voice-live-react/
 
 1. Create/edit files in project root
 2. Export from `index.ts`
-3. Test in example app (`npm run example`)
+3. Test in playground (`npm run dev`)
 4. Update [README.md](README.md)
-5. Build and test (`npm run example:build-mode`)
+5. Build and test (`npm run dev:dist`)
 6. Commit changes
 
 ### Adding a Configuration Helper
@@ -122,13 +132,13 @@ azure-voice-live-react/
 1. Define preset function in [utils/presets.ts](utils/presets.ts)
 2. Export from [index.ts](index.ts)
 3. Add to README.md presets table
-4. Test in example app
+4. Test in playground
 
 ### Fixing a Bug
 
-1. Reproduce in example app
+1. Reproduce in playground
 2. Fix in library code
-3. Verify fix in example app
+3. Verify fix in playground
 4. Test built output
 5. Commit
 
@@ -137,21 +147,26 @@ azure-voice-live-react/
 From library root:
 
 ```bash
-npm run build              # Build library to dist/
-npm run dev                # Build in watch mode
-npm run type-check         # Run TypeScript compiler
-npm run test:pack          # Test actual npm package
-npm run example            # Start example in dev mode
-npm run example:install    # Install example dependencies
-npm run example:build-mode # Build then test dist output
+npm run dev          # Start playground in dev mode (hot reload)
+npm run dev:dist     # Build library + start playground in dist mode
+npm run build        # Build library to dist/
+npm run build:watch  # Build library in watch mode
+npm run type-check   # Run TypeScript compiler
+npm run test         # Run tests
+npm run test:watch   # Run tests in watch mode
+npm run lint         # Lint code
+npm run lint:fix     # Lint and auto-fix
+npm run format       # Format code with Prettier
+npm run format:check # Check formatting
+npm run test:pack    # Test actual npm package (.tgz)
 ```
 
-From example directory:
+From playground directory (rarely needed):
 
 ```bash
 npm run dev       # Dev mode (source alias)
 npm run dev:dist  # Dist mode (built output)
-npm run build     # Build example app
+npm run build     # Build playground app
 ```
 
 ## Coding Standards
@@ -167,10 +182,12 @@ npm run build     # Build example app
 ### Pre-publish Checklist
 
 1. Build successfully: `npm run build`
-2. Test dist output: `npm run example:build-mode`
-3. Update version in package.json
-4. Test pack: `npm run test:pack`
-5. Verify README.md is up to date
+2. Run tests: `npm run test`
+3. Check linting: `npm run lint`
+4. Test dist output: `npm run dev:dist`
+5. Update version in package.json
+6. Test pack: `npm run test:pack`
+7. Verify README.md is up to date
 
 ### Publish to npm
 
@@ -180,11 +197,11 @@ npm publish --access public
 
 ## Testing
 
-### Manual Testing with Example App
+### Manual Testing with Playground
 
-The example app is the primary testing tool:
+The playground is the primary testing tool:
 
-1. Start in dev mode: `npm run example`
+1. Start in dev mode: `npm run dev`
 2. Enter Azure credentials
 3. Test connection, audio, avatar
 4. Verify all features work
@@ -195,23 +212,33 @@ Test the actual package before publishing:
 
 ```bash
 # Option 1: Use dist mode
-npm run example:build-mode
+npm run dev:dist
 
 # Option 2: Test pack (.tgz)
 npm run test:pack
+```
+
+### Automated Tests
+
+Run unit tests with Vitest:
+
+```bash
+npm run test         # Run once
+npm run test:watch   # Watch mode
 ```
 
 ## Resources
 
 - **Main README**: [README.md](README.md) - Library usage documentation
 - **Agent Guide**: [AGENTS.md](AGENTS.md) - AI agent development guide
-- **Example App**: [example/README.md](example/README.md) - Example app documentation
-- **Azure Docs**: https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-reference
+- **Playground**: [playground/README.md](playground/README.md) - Playground documentation
+- **Azure Docs**: <https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-reference>
 
 ## Support
 
 For questions or issues:
+
 - Check [README.md](README.md) for usage documentation
-- Review example app implementation
+- Review playground implementation
 - Consult Azure Voice Live API docs
 - Create GitHub issue with reproduction steps

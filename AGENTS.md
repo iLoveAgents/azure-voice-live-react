@@ -6,66 +6,58 @@ AI agent guidance for developing the Azure Voice Live React library.
 
 Professional React library for Azure AI Foundry Voice Live API. TypeScript strict mode, zero hacks, production-ready code.
 
-## Development Workflow
+## Quick Start
 
-### Setup
 ```bash
-# Install library dependencies
+# Install all dependencies (including playground workspace)
 npm install
 
-# Install example app dependencies (or use: npm run example:install)
-cd example && npm install
+# Start development
+npm run dev
+```
+
+## Development Workflow
+
+### Primary Commands
+
+```bash
+npm run dev          # Start playground in dev mode (hot reload)
+npm run dev:dist     # Test built package (before publishing)
+npm run build        # Build library
+npm run test         # Run tests
+npm run lint         # Check code quality
+npm run format       # Format code
 ```
 
 ### Two Development Modes
 
-**Mode 1: Fast Development (Recommended for Daily Work)**
+**Dev Mode (Fast Iteration)**
 ```bash
-# From library root
-npm run example
-
-# Or from example directory
-cd example && npm run dev
+npm run dev
 ```
 
-Uses Vite alias pointing to `../index.ts`:
-- Edit library code, see changes instantly (hot reload)
+- Uses source code via Vite alias (`../index.ts`)
+- Hot reload - changes reflect instantly
 - No build step needed
-- Fastest iteration speed
-- **Use this for feature development and bug fixes**
+- **Use for daily development**
 
-**Mode 2: Production Testing (Before Publishing)**
+**Dist Mode (Production Testing)**
 ```bash
-# From library root - builds then runs example against dist
-npm run example:build-mode
-
-# Or manually
-npm run build
-cd example && npm run dev:dist
+npm run dev:dist
 ```
 
-Uses built output from `dist/`:
-- Tests the actual package users will install
+- Builds library then runs playground against `dist/`
+- Tests actual package users will install
 - Catches build-only issues
-- Verifies exports and types work correctly
-- **Use this before committing or publishing**
-
-### Testing Changes
-1. Edit library files in project root
-2. Example app auto-reloads (dev mode) or restart server (dist mode)
-3. Open http://localhost:3000 to test
-4. Enter Azure credentials and test functionality
+- **Use before committing**
 
 ### Before Committing
+
 ```bash
-# Build and verify no errors
-npm run build
-
-# Test against built output
-npm run example:build-mode
-
-# Optional: Test the actual npm package
-npm run test:pack
+npm run build        # Verify build works
+npm run test         # Run tests
+npm run lint         # Check code quality
+npm run dev:dist     # Test built output
 ```
 
 ## Project Structure

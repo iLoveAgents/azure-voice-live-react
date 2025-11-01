@@ -41,15 +41,23 @@
     "dist",
     "README.md"
   ],
+  "workspaces": [
+    "playground"
+  ],
   "scripts": {
+    "dev": "npm run dev -w playground",
+    "dev:dist": "npm run build && npm run dev:dist -w playground",
     "build": "tsup",
-    "dev": "tsup --watch",
+    "build:watch": "tsup --watch",
     "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build",
-    "test:pack": "npm pack && cd example && npm install ../*.tgz",
-    "example": "cd example && npm run dev",
-    "example:install": "cd example && npm install",
-    "example:build-mode": "npm run build && cd example && npm run dev:dist"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "prepublishOnly": "npm run build && npm run type-check && npm run test",
+    "test:pack": "npm pack && npm install -w playground ../*.tgz"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
@@ -58,8 +66,17 @@
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^23.0.0",
+    "prettier": "^3.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "sideEffects": false,
   "publishConfig": {
