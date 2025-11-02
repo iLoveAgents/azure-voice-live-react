@@ -559,12 +559,21 @@ export function withSampleRate(
 /**
  * Enable viseme (lip-sync) output
  *
+ * IMPORTANT: Visemes only work with Azure STANDARD voices.
+ * HD voices (with :DragonHDLatestNeural) do NOT support viseme output.
+ * Use standard voices like 'en-US-AvaNeural' instead.
+ *
  * @param config - Session configuration to update
  * @returns Updated configuration
  *
  * @example
  * ```tsx
- * const config = withViseme(baseConfig);
+ * const config = withViseme({
+ *   voice: {
+ *     name: 'en-US-AvaNeural',  // Standard voice
+ *     type: 'azure-standard',
+ *   }
+ * });
  * ```
  */
 export function withViseme(

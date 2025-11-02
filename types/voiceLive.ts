@@ -753,6 +753,9 @@ export interface UseVoiceLiveReturn {
   /** Audio stream for avatar */
   audioStream: MediaStream | null;
 
+  /** Audio context for visualization and analysis */
+  audioContext: AudioContext | null;
+
   /** Whether the session is ready for interaction */
   isReady: boolean;
 

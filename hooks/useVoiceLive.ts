@@ -89,6 +89,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioStreamDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
   const nextPlayTimeRef = useRef<number>(0);
   const currentResponseIdRef = useRef<string | null>(null);
@@ -196,6 +197,12 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContext.destination);
+
+      // Also connect to MediaStreamDestination for visualization
+      if (audioStreamDestinationRef.current) {
+        source.connect(audioStreamDestinationRef.current);
+      }
+
       source.start(scheduleTime);
 
       // Update next play time to maintain continuous playback without gaps
@@ -228,6 +235,8 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         'response.created',
         'response.function_call_arguments.delta',
         'response.output_item.added',
+        'response.animation_viseme.delta',
+        'response.audio_timestamp.delta',
       ];
 
       if (!skipLogging.includes(data.type)) {
@@ -438,6 +447,17 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         console.log(`[${getTimestamp()}] ✅ WebSocket connected`);
         setConnectionState('connected');
 
+        // Initialize AudioContext early for voice-only mode
+        if (!audioContextRef.current) {
+          audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+          console.log(`[${getTimestamp()}] 🔊 AudioContext created`);
+
+          // Create MediaStreamDestination for audio visualization
+          audioStreamDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
+          setAudioStream(audioStreamDestinationRef.current.stream);
+          console.log(`[${getTimestamp()}] 📊 Audio visualization stream created`);
+        }
+
         // Build session configuration using session builder
         const sessionUpdate = buildSessionConfig(session);
 
@@ -533,6 +553,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     connectionState,
     videoStream,
     audioStream,
+    audioContext: audioContextRef.current,
     isReady,
     error,
     connect,
