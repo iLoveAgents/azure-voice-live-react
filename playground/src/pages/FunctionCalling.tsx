@@ -154,8 +154,8 @@ export function FunctionCalling() {
       <p>Status: {connectionState}</p>
 
       <div>
-        <button onClick={handleStart}>Start</button>
-        <button onClick={handleStop}>Stop</button>
+        <button onClick={handleStart} disabled={connectionState === 'connected'}>Start</button>
+        <button onClick={handleStop} disabled={connectionState !== 'connected'}>Stop</button>
       </div>
 
       <div style={{ marginTop: '30px' }}>

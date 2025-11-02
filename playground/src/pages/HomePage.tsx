@@ -5,13 +5,33 @@ export function HomePage() {
     <div>
       <h1>Azure Voice Live React - Examples</h1>
       <p>Simple examples for Azure AI Voice Live API</p>
+
+      <h2 style={{ marginTop: '30px' }}>Voice Examples</h2>
       <ul>
         <li><Link to="/voice-basic">Voice Chat - Simple</Link></li>
+        <li><Link to="/voice-advanced">Voice Chat - Advanced Config</Link></li>
+      </ul>
+
+      <h2 style={{ marginTop: '30px' }}>Avatar Examples</h2>
+      <ul>
+        <li><Link to="/avatar-basic">Avatar - Simple</Link></li>
         <li><Link to="/avatar-advanced">Avatar - Advanced Config</Link></li>
+      </ul>
+
+      <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>
+      <ul>
         <li><Link to="/function-calling">Function Calling</Link></li>
         <li><Link to="/audio-visualizer">Audio Visualizer</Link></li>
         <li><Link to="/viseme">Viseme for Custom Avatar</Link></li>
       </ul>
+
+      <footer style={{ marginTop: '50px', padding: '20px 0', borderTop: '1px solid #ddd', fontSize: '14px', color: '#666' }}>
+        <p>
+          <a href="https://iloveagents.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#0078d4', textDecoration: 'none' }}>
+            iLoveAgents.ai
+          </a>
+        </p>
+      </footer>
     </div>
   );
 }

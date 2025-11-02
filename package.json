@@ -17,7 +17,11 @@
     "webrtc",
     "react-hooks"
   ],
-  "author": "iloveagents",
+  "author": {
+    "name": "Christian Glessner",
+    "email": "christian@iloveagents.ai",
+    "url": "https://iloveagents.ai"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -47,14 +47,16 @@ export function VoiceOnlyBasic() {
     disconnect();
   };
 
+  const isConnected = connectionState === 'connected';
+
   return (
     <div>
       <Link to="/">← Back</Link>
       <h1>Voice Chat - Simple</h1>
       <p>Status: {connectionState}</p>
       <div>
-        <button onClick={handleStart}>Start</button>
-        <button onClick={handleStop}>Stop</button>
+        <button onClick={handleStart} disabled={isConnected}>Start</button>
+        <button onClick={handleStop} disabled={!isConnected}>Stop</button>
       </div>
       <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
     </div>
