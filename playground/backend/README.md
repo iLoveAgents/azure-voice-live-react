@@ -1,83 +1,181 @@
-# Agent Service Backend Proxy
+# Azure Voice Live Backend Proxy
 
-Transparent WebSocket proxy that enables browser connections to Azure Voice Live Agent Service.
+**Generic WebSocket proxy for all Azure Voice Live scenarios with production-ready security.**
 
-## Why is this needed?
+## Why Use a Proxy?
 
-Browsers cannot set the `Authorization` header during WebSocket handshake, but Azure requires it. This proxy adds the header server-side.
+### ⚠️ Security Problem: API Keys in Browser
+
+**Never embed API keys in browser code:**
+- ❌ API keys in `.env` files get bundled into browser JavaScript
+- ❌ Anyone can inspect network tab and steal your keys
+- ❌ Keys can be extracted from source code
+
+**Three Authentication Options:**
+
+| Option | Security | Use Case |
+|--------|----------|----------|
+| **API keys in browser** | 🔴 Insecure | Quick demos only |
+| **Azure Static Web Apps + Easy Auth** | 🟡 Better | SWA deployment, keys in backend config |
+| **Backend Proxy** | 🟢 Best | Production apps, keys never exposed |
+
+## How the Proxy Works
 
 ```
-Browser (MSAL) → Proxy → Azure Agent Service
-     Token       Adds Auth       Requires Auth
+┌─────────┐              ┌─────────┐              ┌───────┐
+│ Browser │──no keys──▶  │  Proxy  │──with keys──▶│ Azure │
+└─────────┘              └─────────┘              └───────┘
+                         API key secured
+                         in backend .env
 ```
 
-## Proxy Options
+**Key Benefits:**
+- API keys stay server-side (never exposed to browser)
+- Single proxy handles all scenarios (Voice, Avatar, Agent)
+- Switch to proxy by changing one line of code
 
-### Option 1: Node.js (Development)
+## Quick Start
 
-**Setup:**
+### 1. Install & Configure
 
 ```bash
+cd playground/backend
 npm install
 cp .env.example .env
-# Edit .env with your Azure configuration
+# Edit .env with your values
 npm start
 ```
 
-**Configuration (.env):**
+### 2. Update Frontend Code
+
+**Before (insecure):**
+```typescript
+const config = createVoiceLiveConfig('default', {
+  connection: {
+    resourceName: 'my-resource',
+    apiKey: 'my-api-key', // ❌ Exposed in browser!
+  }
+});
+```
+
+**After (secure):**
+```typescript
+const config = createVoiceLiveConfig('default', {
+  connection: {
+    customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime',
+    // ✅ No API key needed! Proxy adds it server-side.
+  }
+});
+```
+
+That's it! Just change the endpoint.
+
+## All Supported Scenarios
+
+### Voice & Avatar (Standard Mode)
+
+**Frontend:**
+```typescript
+customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime'
+```
+
+**Backend (.env):**
 ```bash
-PORT=8080
+AZURE_AI_FOUNDRY_RESOURCE=your-resource
+AZURE_SPEECH_KEY=your-api-key  # Secured server-side
+```
+
+### Agent Service (MSAL Mode)
+
+**Frontend:**
+```typescript
+const token = await msalInstance.acquireTokenSilent({
+  scopes: ['https://ai.azure.com/.default']
+});
+
+customWebSocketUrl: `ws://localhost:8080?mode=agent&token=${token.accessToken}`
+```
+
+**Backend (.env):**
+```bash
 AZURE_AI_FOUNDRY_RESOURCE=your-resource
 AGENT_ID=your-agent-id
 PROJECT_NAME=your-project
+```
+
+## Configuration
+
+### Environment Variables (.env)
+
+```bash
+# Server
+PORT=8080
 API_VERSION=2025-10-01
+
+# Azure Resource (required)
+AZURE_AI_FOUNDRY_RESOURCE=your-resource-name
+
+# Voice/Avatar: API key secured in backend
+AZURE_SPEECH_KEY=your-api-key-here
+
+# Agent Service: optional defaults
+AGENT_ID=your-agent-id
+PROJECT_NAME=your-project-name
 ```
 
-**Usage:**
-```javascript
-const ws = new WebSocket(`ws://localhost:8080?token=${token}`);
+## Production Deployment
+
+### Option 1: Node.js (PM2, Docker, etc.)
+
+```bash
+# With PM2
+pm2 start server.js --name azure-voice-proxy
+
+# With Docker
+docker build -t voice-proxy .
+docker run -p 8080:8080 --env-file .env voice-proxy
 ```
 
-### Option 2: Nginx (Production)
+### Option 2: Nginx (Simplest)
 
-**Configuration (nginx.conf):**
+See [nginx.conf.example](./nginx.conf.example) for full configuration.
+
 ```nginx
-location /agent-service {
-    set $token $arg_token;
-    set $azure_resource "your-resource.services.ai.azure.com";
-
-    proxy_pass https://$azure_resource/voice-live/realtime?...;
+location /voice-proxy {
+    proxy_pass https://your-resource.services.ai.azure.com/voice-live/realtime?...;
     proxy_set_header Authorization "Bearer $token";
-
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
 }
 ```
 
-See [nginx.conf.example](./nginx.conf.example) for complete configuration.
+## Security Best Practices
 
-## How it works
+1. **Never commit `.env`** - add to `.gitignore`
+2. **Use WSS in production** - secure WebSocket (TLS)
+3. **Add rate limiting** - prevent abuse
+4. **Validate tokens** - especially for agent mode
+5. **Use environment-specific configs** - dev/staging/prod
 
-1. Browser gets Azure AD token via MSAL
-2. Browser connects to proxy with token in query parameter
-3. Proxy adds `Authorization: Bearer <token>` header (browsers can't)
-4. Proxy forwards all messages transparently
+## Examples
 
-## Security
-
-- Token transmitted over WSS (encrypted like HTTPS)
-- Add authentication/rate limiting for production
-- Use WSS (secure WebSocket) in production
-- Validate tokens server-side for sensitive applications
+See the playground for complete examples:
+- `/voice-proxy` - Voice chat with secure proxy
+- `/avatar-proxy` - Avatar with secure proxy
+- `/agent-service` - Agent Service with MSAL + proxy
 
 ## Troubleshooting
 
 **Connection fails:**
-- Verify token is valid and has `https://ai.azure.com/.default` scope
-- Check Azure configuration in .env
-- Ensure "Cognitive Services User" role assigned in Azure
+- Verify `.env` has correct values
+- Check backend is running: `curl http://localhost:8080`
+- Check backend logs for errors
 
-**Messages not working:**
-- Azure expects text messages (JSON), not binary
-- Proxy automatically converts buffers to UTF-8 text
+**"Missing token parameter":**
+- Agent mode requires MSAL token in query param
+- Standard mode doesn't need token
+
+**"AZURE_SPEECH_KEY required":**
+- Standard mode needs API key in backend .env
+- Make sure you copied .env.example to .env

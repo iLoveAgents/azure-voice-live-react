@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 export function AudioVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const animationFrameRef = useRef<number>();
 
   const config = createVoiceLiveConfig('default', {
@@ -26,6 +27,14 @@ export function AudioVisualizer() {
       sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
     }, [sendEvent]),
   });
+
+  // Connect audio stream to audio element for playback
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [audioStream]);
 
   // Audio visualization
   useEffect(() => {
@@ -130,6 +139,8 @@ export function AudioVisualizer() {
           }}
         />
       </div>
+
+      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
     </div>
   );
 }

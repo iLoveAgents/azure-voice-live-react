@@ -5,8 +5,10 @@ import { PublicClientApplication } from '@azure/msal-browser';
 import { HomePage } from './pages/HomePage';
 import { VoiceOnlyBasic } from './pages/VoiceOnlyBasic';
 import { VoiceAdvanced } from './pages/VoiceAdvanced';
+import { VoiceProxy } from './pages/VoiceProxy';
 import { AvatarBasic } from './pages/AvatarBasic';
 import { AvatarAdvanced } from './pages/AvatarAdvanced';
+import { AvatarProxy } from './pages/AvatarProxy';
 import { FunctionCalling } from './pages/FunctionCalling';
 import { AudioVisualizer } from './pages/AudioVisualizer';
 import { VisemeExample } from './pages/VisemeExample';
@@ -48,8 +50,10 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/voice-basic" element={<VoiceOnlyBasic />} />
           <Route path="/voice-advanced" element={<VoiceAdvanced />} />
+          <Route path="/voice-proxy" element={<VoiceProxy />} />
           <Route path="/avatar-basic" element={<AvatarBasic />} />
           <Route path="/avatar-advanced" element={<AvatarAdvanced />} />
+          <Route path="/avatar-proxy" element={<AvatarProxy />} />
           <Route path="/agent-service" element={<AgentService />} />
           <Route path="/function-calling" element={<FunctionCalling />} />
           <Route path="/audio-visualizer" element={<AudioVisualizer />} />

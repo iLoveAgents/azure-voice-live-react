@@ -54,7 +54,7 @@ export type VoiceLiveModel = KnownVoiceLiveModel | (string & {});
  */
 export interface VoiceLiveConnectionConfig {
   /** Azure AI Foundry resource name */
-  resourceName: string;
+  resourceName?: string;
 
   /** API key authentication (or use token for Microsoft Entra) */
   apiKey?: string;
@@ -87,6 +87,15 @@ export interface VoiceLiveConnectionConfig {
 
   /** Agent access token for Azure AI Agent Service (required for Agent mode) */
   agentAccessToken?: string;
+
+  // ===== Proxy Mode =====
+
+  /**
+   * Custom WebSocket URL to connect to (e.g., for backend proxy)
+   * When set, overrides all other connection parameters
+   * Example: 'ws://localhost:8080?mode=standard&model=gpt-realtime'
+   */
+  customWebSocketUrl?: string;
 }
 
 // ============================================================================

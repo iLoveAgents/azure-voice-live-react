@@ -10,17 +10,19 @@ export function HomePage() {
       <ul>
         <li><Link to="/voice-basic">Voice Chat - Simple</Link></li>
         <li><Link to="/voice-advanced">Voice Chat - Advanced Config</Link></li>
+        <li><Link to="/voice-proxy">Voice Chat - Secure Proxy</Link> <span style={{fontSize: '12px', color: '#666'}}>(recommended for production)</span></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Avatar Examples</h2>
       <ul>
         <li><Link to="/avatar-basic">Avatar - Simple</Link></li>
         <li><Link to="/avatar-advanced">Avatar - Advanced</Link></li>
+        <li><Link to="/avatar-proxy">Avatar - Secure Proxy</Link> <span style={{fontSize: '12px', color: '#666'}}>(recommended for production)</span></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Agent Service</h2>
       <ul>
-        <li><Link to="/agent-service">Agent Service</Link></li>
+        <li><Link to="/agent-service">Agent Service</Link> <span style={{fontSize: '12px', color: '#666'}}>(requires MSAL + proxy)</span></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>

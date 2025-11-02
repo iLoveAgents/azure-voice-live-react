@@ -95,6 +95,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const currentResponseIdRef = useRef<string | null>(null);
   const responseStartTimeRef = useRef<number | null>(null);
   const isFirstChunkRef = useRef<boolean>(true);
+  const isAgentModeRef = useRef<boolean>(false);
 
   /**
    * Send an event to the Voice Live API
@@ -204,11 +205,14 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       // Create and schedule audio source
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
 
-      // Also connect to MediaStreamDestination for visualization
+      // Connect to MediaStreamDestination for visualization OR directly to speakers
       if (audioStreamDestinationRef.current) {
+        // Voice-only mode: connect to MediaStream, component will play it via <audio> element
         source.connect(audioStreamDestinationRef.current);
+      } else {
+        // Fallback: play directly (shouldn't happen in normal voice-only mode)
+        source.connect(audioContext.destination);
       }
 
       source.start(scheduleTime);
@@ -260,6 +264,17 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       switch (data.type) {
         case 'session.created':
           console.log(`[${getTimestamp()}] Session created`);
+
+          // NOW send session.update after receiving session.created
+          const sessionUpdate = isAgentModeRef.current
+            ? buildAgentSessionConfig(session)
+            : buildSessionConfig(session);
+
+          console.log(`[${getTimestamp()}] Configuring session...`);
+          sendEvent({
+            type: 'session.update',
+            session: sessionUpdate,
+          });
           break;
 
         case 'session.updated':
@@ -414,7 +429,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
       }
     },
-    [onEvent, sendEvent, toolExecutor, playAudioChunk, stopAudioPlayback, videoStream]
+    [onEvent, sendEvent, toolExecutor, playAudioChunk, stopAudioPlayback, videoStream, session]
   );
 
   /**
@@ -426,44 +441,59 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       setConnectionState('connecting');
 
       // Build WebSocket URL
-      const projectIdentifier = connection.projectName || connection.projectId;
-      const isAgentMode = !!(connection.agentId && projectIdentifier);
       let wsUrl: string;
+      let isAgentMode = false;
 
-      if (isAgentMode) {
-        // Agent Service mode - per Azure docs: use agent-id and agent-project-name
-        wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
-          connection.apiVersion || '2025-10-01'
-        }&agent-id=${connection.agentId}&agent-project-name=${projectIdentifier}`;
+      // Proxy mode: use custom WebSocket URL if provided
+      if (connection.customWebSocketUrl) {
+        wsUrl = connection.customWebSocketUrl;
+        // Detect agent mode from URL parameters
+        isAgentMode = wsUrl.includes('mode=agent');
+        isAgentModeRef.current = isAgentMode;
+        console.log(`[${getTimestamp()}] Connecting via proxy...`);
+        console.log(`[${getTimestamp()}] URL: ${wsUrl.replace(/token=[^&]+/, 'token=***')}`);
+        console.log(`[${getTimestamp()}] Mode: ${isAgentMode ? 'Agent Service' : 'Standard (Voice/Avatar)'}`);
+      } else {
+        // Direct connection mode
+        const projectIdentifier = connection.projectName || connection.projectId;
+        isAgentMode = !!(connection.agentId && projectIdentifier);
+        isAgentModeRef.current = isAgentMode;
 
-        // Agent Service authentication: ONLY agent-access-token query parameter
-        // Note: API key auth is explicitly NOT supported in Agent mode (server returns error)
-        // Browser limitation: Can't set Authorization header, so token must go in query param
-        if (connection.agentAccessToken) {
-          wsUrl += `&agent-access-token=${encodeURIComponent(connection.agentAccessToken)}`;
+        if (isAgentMode) {
+          // Agent Service mode - per Azure docs: use agent-id and agent-project-name
+          wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
+            connection.apiVersion || '2025-10-01'
+          }&agent-id=${connection.agentId}&agent-project-name=${projectIdentifier}`;
+
+          // Agent Service authentication: ONLY agent-access-token query parameter
+          // Note: API key auth is explicitly NOT supported in Agent mode (server returns error)
+          // Browser limitation: Can't set Authorization header, so token must go in query param
+          if (connection.agentAccessToken) {
+            wsUrl += `&agent-access-token=${encodeURIComponent(connection.agentAccessToken)}`;
+          } else {
+            throw new Error('agentAccessToken is required for Agent Service mode.');
+          }
         } else {
-          throw new Error('agentAccessToken is required for Agent Service mode.');
-        }
-      } else {
-        // Standard mode with model
-        const model = connection.model || 'gpt-realtime'; // Default to best quality
-        wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
-          connection.apiVersion || '2025-10-01'
-        }&model=${model}`;
+          // Standard mode with model
+          const model = connection.model || 'gpt-realtime'; // Default to best quality
+          wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
+            connection.apiVersion || '2025-10-01'
+          }&model=${model}`;
 
-        // Standard mode authentication: use api-key
-        if (connection.apiKey) {
-          wsUrl += `&api-key=${encodeURIComponent(connection.apiKey)}`;
+          // Standard mode authentication: use api-key
+          if (connection.apiKey) {
+            wsUrl += `&api-key=${encodeURIComponent(connection.apiKey)}`;
+          }
+          // Note: Token auth via Authorization header would need different WebSocket setup
         }
-        // Note: Token auth via Authorization header would need different WebSocket setup
-      }
 
-      console.log(`[${getTimestamp()}] Connecting to Voice Live API...`);
-      console.log(`[${getTimestamp()}] URL: ${wsUrl.replace(/api-key=[^&]+/, 'api-key=***').replace(/agent-access-token=[^&]+/, 'agent-access-token=***')}`);
-      if (isAgentMode) {
-        console.log(`[${getTimestamp()}] Agent: ${connection.agentId}, Project: ${projectIdentifier}`);
-      } else {
-        console.log(`[${getTimestamp()}] Model: ${connection.model || 'gpt-realtime'}`);
+        console.log(`[${getTimestamp()}] Connecting to Voice Live API...`);
+        console.log(`[${getTimestamp()}] URL: ${wsUrl.replace(/api-key=[^&]+/, 'api-key=***').replace(/agent-access-token=[^&]+/, 'agent-access-token=***')}`);
+        if (isAgentMode) {
+          console.log(`[${getTimestamp()}] Agent: ${connection.agentId}, Project: ${projectIdentifier}`);
+        } else {
+          console.log(`[${getTimestamp()}] Model: ${connection.model || 'gpt-realtime'}`);
+        }
       }
 
       const ws = new WebSocket(wsUrl);
@@ -486,18 +516,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           console.log(`[${getTimestamp()}] Audio visualization stream created`);
         }
 
-        // Configure session
-        // Agent Service: only send basic audio config (avatar/voice/instructions from portal)
-        // Standard mode: send full session config
-        const sessionUpdate = isAgentMode
-          ? buildAgentSessionConfig(session)
-          : buildSessionConfig(session);
-
-        console.log(`[${getTimestamp()}] Configuring session...`);
-        sendEvent({
-          type: 'session.update',
-          session: sessionUpdate,
-        });
+        // Don't send session.update yet - wait for session.created from Azure
       };
 
       ws.onmessage = handleMessage;
