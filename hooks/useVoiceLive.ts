@@ -90,6 +90,8 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
+  const nextPlayTimeRef = useRef<number>(0);
+  const currentResponseIdRef = useRef<string | null>(null);
 
   /**
    * Send an event to the Voice Live API
@@ -130,18 +132,41 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   );
 
   /**
-   * Play audio chunk for voice-only mode
+   * Stop all audio playback immediately (for interruptions/barge-in)
+   * Following Microsoft's WebSocket interruption pattern
+   */
+  const stopAudioPlayback = useCallback(() => {
+    // Stop all scheduled audio sources
+    audioQueueRef.current.forEach((source) => {
+      try {
+        source.stop();
+      } catch (e) {
+        // Source may have already stopped naturally
+      }
+    });
+    audioQueueRef.current = [];
+
+    // Reset playback scheduling
+    nextPlayTimeRef.current = 0;
+
+    console.log(`[${getTimestamp()}] 🛑 Audio playback stopped (user interruption)`);
+  }, []);
+
+  /**
+   * Play audio chunk for voice-only mode with proper sequential scheduling
+   * Following Microsoft Azure Voice Live API and OpenAI Realtime API patterns
    */
   const playAudioChunk = useCallback((base64Audio: string) => {
     try {
-      // Initialize AudioContext if needed
+      // Initialize AudioContext if needed (24kHz for Azure Voice Live API)
       if (!audioContextRef.current) {
         audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        nextPlayTimeRef.current = 0;
       }
 
       const audioContext = audioContextRef.current;
 
-      // Decode base64 to PCM16
+      // Decode base64 to PCM16 (following Microsoft's pattern)
       const binaryString = atob(base64Audio);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -149,24 +174,32 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       }
 
       // Convert PCM16 to Float32 for Web Audio API
+      // PCM16 range: -32768 to 32767 → Float32 range: -1.0 to 1.0
       const pcm16 = new Int16Array(bytes.buffer);
       const float32 = new Float32Array(pcm16.length);
       for (let i = 0; i < pcm16.length; i++) {
         const sample = pcm16[i];
         if (sample !== undefined) {
-          float32[i] = sample / 32768.0; // Convert to -1.0 to 1.0 range
+          float32[i] = sample / 32768.0;
         }
       }
 
-      // Create AudioBuffer
+      // Create AudioBuffer (mono channel, 24kHz sample rate)
       const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
       audioBuffer.getChannelData(0).set(float32);
 
-      // Create and play source
+      // Calculate scheduled play time for sequential playback
+      const currentTime = audioContext.currentTime;
+      const scheduleTime = Math.max(currentTime, nextPlayTimeRef.current);
+
+      // Create and schedule audio source
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContext.destination);
-      source.start();
+      source.start(scheduleTime);
+
+      // Update next play time to maintain continuous playback without gaps
+      nextPlayTimeRef.current = scheduleTime + audioBuffer.duration;
 
       // Track for cleanup
       audioQueueRef.current.push(source);
@@ -305,8 +338,19 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           }
           break;
 
+        case 'response.created':
+          // Track current response for interruption handling
+          if (data.response?.id) {
+            currentResponseIdRef.current = data.response.id;
+          }
+          break;
+
         case 'input_audio_buffer.speech_started':
-          console.log(`[${getTimestamp()}] 🎤 User speaking...`);
+          console.log(`[${getTimestamp()}] 🎤 User speaking (interrupting)...`);
+          // Microsoft's official pattern for WebSocket barge-in:
+          // Stop client-side audio playback immediately
+          // Server handles truncation with auto_truncate: true
+          stopAudioPlayback();
           break;
 
         case 'input_audio_buffer.speech_stopped':
@@ -319,8 +363,16 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
         case 'response.audio.delta':
           // Play audio for voice-only mode (no avatar)
-          if (data.delta && !videoStream) {
+          // Only play if this is the current response (not interrupted)
+          if (data.delta && !videoStream && data.response_id === currentResponseIdRef.current) {
             playAudioChunk(data.delta);
+          }
+          break;
+
+        case 'response.audio.done':
+          // Reset playback scheduling for next response
+          if (data.response_id === currentResponseIdRef.current) {
+            nextPlayTimeRef.current = 0;
           }
           break;
 
@@ -342,7 +394,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
       }
     },
-    [onEvent, sendEvent, toolExecutor, playAudioChunk, videoStream]
+    [onEvent, sendEvent, toolExecutor, playAudioChunk, stopAudioPlayback, videoStream]
   );
 
   /**
@@ -427,6 +479,23 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
    */
   const disconnect = useCallback(() => {
     console.log(`[${getTimestamp()}] 🔌 Disconnecting...`);
+
+    // Stop any playing audio
+    audioQueueRef.current.forEach((source) => {
+      try {
+        source.stop();
+      } catch (e) {
+        // Ignore if already stopped
+      }
+    });
+    audioQueueRef.current = [];
+
+    // Close audio context
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    nextPlayTimeRef.current = 0;
 
     // Close WebSocket
     if (wsRef.current) {

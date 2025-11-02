@@ -1,3 +1,14 @@
+/* iLoveAgents Brand Colors */
+:root {
+  --brand-primary: #0078d4;
+  --brand-hover: #106ebe;
+  --brand-pressed: #005a9e;
+  --text-primary: #323130;
+  --text-secondary: #605e5c;
+  --bg-primary: #ffffff;
+  --bg-secondary: #faf9f8;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -10,7 +21,63 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #fafafa;
+  background: var(--bg-secondary);
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+h2 {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  color: var(--text-primary);
+}
+
+p {
+  margin-bottom: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  background: var(--brand-primary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: var(--brand-hover);
+}
+
+button:active {
+  background: var(--brand-pressed);
+}
+
+button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+a {
+  color: var(--brand-primary);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--brand-hover);
+  text-decoration: underline;
 }
 
 code {

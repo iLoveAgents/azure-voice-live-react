@@ -31,11 +31,53 @@ interface UseAudioCaptureProps extends AudioCaptureConfig {
 }
 
 /**
+ * Inline AudioWorklet processor code
+ * Converts float32 audio samples to PCM16 format
+ */
+const AUDIO_PROCESSOR_CODE = `
+class AudioCaptureProcessor extends AudioWorkletProcessor {
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+
+    if (input && input.length > 0) {
+      const inputData = input[0]; // Get first channel
+
+      if (inputData && inputData.length > 0) {
+        // Convert float32 audio samples to PCM16
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          // Clamp to [-1, 1] and convert to 16-bit integer
+          const clamped = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = Math.round(clamped * 32767);
+        }
+
+        // Send the PCM16 data to the main thread
+        this.port.postMessage(pcm16.buffer, [pcm16.buffer]);
+      }
+    }
+
+    // Return true to keep the processor alive
+    return true;
+  }
+}
+
+registerProcessor('audio-capture-processor', AudioCaptureProcessor);
+`;
+
+/**
+ * Create a blob URL for the inline audio processor
+ */
+function createProcessorBlobUrl(): string {
+  const blob = new Blob([AUDIO_PROCESSOR_CODE], { type: 'application/javascript' });
+  return URL.createObjectURL(blob);
+}
+
+/**
  * Hook for capturing and processing microphone audio
  */
 export function useAudioCapture({
   sampleRate = 24000,
-  workletPath = '/audio-processor.js',
+  workletPath, // Now optional - will use inline processor if not provided
   audioConstraints,
   onAudioData,
   autoStart = false,
@@ -47,6 +89,7 @@ export function useAudioCapture({
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const blobUrlRef = useRef<string | null>(null);
 
   /**
    * Start capturing audio from the microphone
@@ -65,8 +108,19 @@ export function useAudioCapture({
       const audioContext = new AudioContext({ sampleRate });
       audioContextRef.current = audioContext;
 
+      // Determine processor path: use inline processor if no custom path provided
+      let processorUrl: string;
+      if (workletPath) {
+        // Use custom worklet path (advanced usage)
+        processorUrl = workletPath;
+      } else {
+        // Use inline processor (default - zero config!)
+        processorUrl = createProcessorBlobUrl();
+        blobUrlRef.current = processorUrl;
+      }
+
       // Load AudioWorklet processor
-      await audioContext.audioWorklet.addModule(workletPath);
+      await audioContext.audioWorklet.addModule(processorUrl);
 
       // Create audio source and worklet node
       const source = audioContext.createMediaStreamSource(stream);
@@ -74,6 +128,13 @@ export function useAudioCapture({
 
       sourceRef.current = source;
       audioWorkletNodeRef.current = workletNode;
+
+      // Set up audio data handler BEFORE connecting
+      if (onAudioData) {
+        workletNode.port.onmessage = (event) => {
+          onAudioData(event.data as ArrayBuffer);
+        };
+      }
 
       // Connect audio graph
       source.connect(workletNode);
@@ -86,7 +147,7 @@ export function useAudioCapture({
       console.error('Audio capture error:', err);
       throw err;
     }
-  }, [sampleRate, workletPath, audioConstraints]);
+  }, [sampleRate, workletPath, audioConstraints, onAudioData]);
 
   /**
    * Stop capturing audio and release resources
@@ -114,6 +175,12 @@ export function useAudioCapture({
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+
+    // Cleanup blob URL if we created one
+    if (blobUrlRef.current) {
+      URL.revokeObjectURL(blobUrlRef.current);
+      blobUrlRef.current = null;
     }
 
     setIsCapturing(false);

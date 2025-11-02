@@ -71,6 +71,7 @@ export const CALL_CENTER_PRESET: Partial<VoiceLiveSessionConfig> = {
     silenceDurationMs: 400, // Slightly faster response
     removeFillerWords: true, // Critical for reducing false barge-ins
     interruptResponse: true, // Allow customer to interrupt
+    autoTruncate: true, // Auto-truncate response on interruption
     createResponse: true,
   },
 
@@ -170,6 +171,7 @@ export const GAMING_PRESET: Partial<VoiceLiveSessionConfig> = {
     silenceDurationMs: 300, // Short silence
     removeFillerWords: true,
     interruptResponse: true,
+    autoTruncate: true, // Auto-truncate response on interruption
     createResponse: true,
   },
 
@@ -246,6 +248,7 @@ export const MULTILINGUAL_PRESET: Partial<VoiceLiveSessionConfig> = {
     removeFillerWords: true,
     languages: ['en', 'es', 'fr', 'de', 'it', 'ja', 'pt', 'zh', 'ko', 'hi'],
     interruptResponse: true,
+    autoTruncate: true, // Auto-truncate response on interruption
     createResponse: true,
   },
 

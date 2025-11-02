@@ -100,7 +100,11 @@ export interface VoiceLiveConfig {
 export interface AudioCaptureConfig {
   /** Sample rate for audio processing (default: 24000) */
   sampleRate?: number;
-  /** Path to AudioWorklet processor script (default: '/audio-processor.js') */
+  /**
+   * Optional path to custom AudioWorklet processor script.
+   * If not provided, uses inline processor (zero config).
+   * Advanced: Provide custom path for specialized audio processing.
+   */
   workletPath?: string;
   /** Audio constraints for getUserMedia */
   audioConstraints?: MediaTrackConstraints;
