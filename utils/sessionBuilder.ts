@@ -1,8 +1,11 @@
 /**
  * Session Configuration Builder
  *
- * Maps UseVoiceLiveConfig to Voice Live API session.update format
- * Handles all Voice Live parameters with proper defaults
+ * Converts typed TypeScript configuration objects to Azure Voice Live API
+ * wire format (JSON with snake_case). Handles all Voice Live parameters
+ * with sensible defaults optimized for production use.
+ *
+ * @module sessionBuilder
  */
 
 import type {
@@ -14,7 +17,12 @@ import type {
 
 /**
  * Default session configuration
- * Optimized for best quality and user experience
+ * 
+ * Optimized for best quality and user experience:
+ * - Uses OpenAI 'alloy' voice (works with all models)
+ * - Enables Azure semantic VAD for robust turn detection
+ * - Includes audio enhancements (echo cancellation, noise reduction)
+ * - Supports interruption for natural conversation flow
  */
 export const DEFAULT_SESSION_CONFIG: VoiceLiveSessionConfig = {
   // Core configuration
@@ -25,6 +33,9 @@ export const DEFAULT_SESSION_CONFIG: VoiceLiveSessionConfig = {
   // Audio formats
   inputAudioFormat: 'pcm16',
   outputAudioFormat: 'pcm16',
+
+  // Voice Live: Default voice (required)
+  voice: 'alloy',
 
   // Voice Live: Input audio enhancements (enabled by default)
   inputAudioSamplingRate: 24000,
@@ -54,10 +65,15 @@ export const DEFAULT_SESSION_CONFIG: VoiceLiveSessionConfig = {
 
 /**
  * Build session configuration from user config
- * Deep merges user config with defaults
+ * 
+ * Deep merges user configuration with defaults and converts to Voice Live API format.
+ * 
+ * @param userConfig - Optional user configuration to override defaults
+ * @returns Session configuration object in Voice Live API wire format (snake_case)
  */
 export function buildSessionConfig(
   userConfig?: VoiceLiveSessionConfig
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any {
   if (!userConfig) {
     return convertToSessionUpdate(DEFAULT_SESSION_CONFIG);
@@ -71,10 +87,73 @@ export function buildSessionConfig(
 }
 
 /**
- * Convert typed config to session.update wire format
- * Handles snake_case conversion and structure transformation
+ * Build minimal session configuration for Agent Service mode
+ *
+ * Agent mode uses agents configured in Azure AI Foundry portal.
+ * Audio settings, voice, and avatar can be configured here - instructions
+ * come from the portal configuration.
+ *
+ * @param userConfig - Optional audio, voice, and avatar configuration overrides
+ * @returns Minimal session configuration for agent mode
  */
+export function buildAgentSessionConfig(
+  userConfig?: VoiceLiveSessionConfig
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any {
+  // Start with basic audio configuration
+  const agentConfig: VoiceLiveSessionConfig = {
+    modalities: ['text', 'audio'],
+    inputAudioFormat: 'pcm16',
+    outputAudioFormat: 'pcm16',
+    inputAudioSamplingRate: 24000,
+    inputAudioEchoCancellation: {
+      type: 'server_echo_cancellation',
+    },
+    inputAudioNoiseReduction: {
+      type: 'azure_deep_noise_suppression',
+    },
+    turnDetection: {
+      type: 'azure_semantic_vad',
+      threshold: 0.5,
+      prefixPaddingMs: 300,
+      speechDurationMs: 80,
+      silenceDurationMs: 500,
+      removeFillerWords: false,
+      interruptResponse: true,
+      createResponse: true,
+    },
+  };
+
+  // Allow user to override audio settings if provided
+  if (userConfig) {
+    if (userConfig.modalities) agentConfig.modalities = userConfig.modalities;
+    if (userConfig.inputAudioFormat) agentConfig.inputAudioFormat = userConfig.inputAudioFormat;
+    if (userConfig.outputAudioFormat) agentConfig.outputAudioFormat = userConfig.outputAudioFormat;
+    if (userConfig.inputAudioSamplingRate) agentConfig.inputAudioSamplingRate = userConfig.inputAudioSamplingRate;
+    if (userConfig.inputAudioEchoCancellation !== undefined) agentConfig.inputAudioEchoCancellation = userConfig.inputAudioEchoCancellation;
+    if (userConfig.inputAudioNoiseReduction !== undefined) agentConfig.inputAudioNoiseReduction = userConfig.inputAudioNoiseReduction;
+    if (userConfig.turnDetection !== undefined) agentConfig.turnDetection = userConfig.turnDetection;
+    if (userConfig.inputAudioTranscription !== undefined) agentConfig.inputAudioTranscription = userConfig.inputAudioTranscription;
+    if (userConfig.voice !== undefined) agentConfig.voice = userConfig.voice;
+    if (userConfig.avatar !== undefined) agentConfig.avatar = userConfig.avatar;
+  }
+
+  // Convert to session.update format
+  return convertToSessionUpdate(agentConfig);
+}
+
+/**
+ * Convert typed config to session.update wire format
+ * 
+ * Transforms camelCase TypeScript config to snake_case JSON format
+ * required by the Azure Voice Live API WebSocket protocol.
+ * 
+ * @param config - Typed session configuration
+ * @returns Plain object with snake_case fields for API transmission
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertToSessionUpdate(config: VoiceLiveSessionConfig): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const session: any = {};
 
   // Core configuration
@@ -218,7 +297,15 @@ function convertToSessionUpdate(config: VoiceLiveSessionConfig): any {
 
 /**
  * Convert voice config to wire format
+ * 
+ * Handles multiple voice configuration formats:
+ * - String: Simple voice name (e.g., "alloy")
+ * - Object: Full voice configuration with type, name, and parameters
+ * 
+ * @param voice - Voice configuration in any supported format
+ * @returns Voice object in API format
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertVoiceConfig(voice: string | StandardVoice | VoiceConfig): any {
   // Simple string voice name
   if (typeof voice === 'string') {
@@ -226,6 +313,7 @@ function convertVoiceConfig(voice: string | StandardVoice | VoiceConfig): any {
   }
 
   // Full VoiceConfig
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const voiceConfig: any = {
     name: voice.name,
   };
@@ -238,8 +326,8 @@ function convertVoiceConfig(voice: string | StandardVoice | VoiceConfig): any {
     voiceConfig.temperature = voice.temperature;
   }
 
-  if (voice.rate) {
-    voiceConfig.rate = voice.rate;
+  if (voice.rate !== undefined) {
+    voiceConfig.rate = String(voice.rate);
   }
 
   return voiceConfig;
@@ -247,8 +335,18 @@ function convertVoiceConfig(voice: string | StandardVoice | VoiceConfig): any {
 
 /**
  * Convert turn detection config to wire format
+ * 
+ * Handles conversion for all turn detection types:
+ * - server_vad: Basic VAD
+ * - semantic_vad: OpenAI semantic VAD
+ * - azure_semantic_vad: Azure semantic VAD with filler word removal
+ * 
+ * @param config - Turn detection configuration
+ * @returns Turn detection object in API format
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function convertTurnDetection(config: TurnDetectionConfig): any {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const turnDetection: any = {};
 
   if (config.type) {
@@ -310,8 +408,17 @@ function convertTurnDetection(config: TurnDetectionConfig): any {
 }
 
 /**
- * Deep merge two objects
- * Handles null values correctly (null = disable feature)
+ * Deep merge two objects with null-aware semantics
+ * 
+ * Merges source into target recursively. Important behaviors:
+ * - null values explicitly disable features (preserved, not merged)
+ * - undefined values are skipped (use target value)
+ * - Arrays are replaced, not merged
+ * - Objects are merged recursively
+ * 
+ * @param target - Base configuration object
+ * @param source - Partial configuration to merge in
+ * @returns Merged configuration object
  */
 function deepMerge<T>(target: T, source: Partial<T>): T {
   const result = { ...target };
@@ -322,6 +429,7 @@ function deepMerge<T>(target: T, source: Partial<T>): T {
 
     // Handle null explicitly (means "disable this feature")
     if (sourceValue === null) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result as any)[key] = null;
       continue;
     }
@@ -339,9 +447,11 @@ function deepMerge<T>(target: T, source: Partial<T>): T {
       !Array.isArray(targetValue) &&
       targetValue !== null
     ) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result as any)[key] = deepMerge(targetValue, sourceValue);
     } else {
       // Primitive values or arrays - direct assignment
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (result as any)[key] = sourceValue;
     }
   }
@@ -350,8 +460,16 @@ function deepMerge<T>(target: T, source: Partial<T>): T {
 }
 
 /**
- * Validate configuration
- * Throws error for incompatible settings
+ * Validate configuration for compatibility
+ * 
+ * Checks for invalid configuration combinations and throws descriptive errors.
+ * Currently validates:
+ * - Agent mode restrictions (instructions must come from portal)
+ * - Turn detection compatibility warnings
+ * 
+ * @param config - Session configuration to validate
+ * @param isAgentMode - Whether this is an agent service session
+ * @throws Error if configuration is invalid
  */
 export function validateConfig(
   config: VoiceLiveSessionConfig,

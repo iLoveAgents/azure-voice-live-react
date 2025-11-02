@@ -1,6 +1,6 @@
 {
   "name": "@iloveagents/azure-voice-live-react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "React library for Azure AI Foundry Voice Live API. Full TypeScript support with optimized presets and configuration helpers.",
   "keywords": [
     "azure",
@@ -17,11 +17,15 @@
     "webrtc",
     "react-hooks"
   ],
-  "author": "iloveagents",
+  "author": {
+    "name": "Christian Glessner",
+    "email": "christian@iloveagents.ai",
+    "url": "https://iloveagents.ai"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/iloveagents/azure-voice-live-react.git"
+    "url": "git+https://github.com/iloveagents/azure-voice-live-react.git"
   },
   "bugs": {
     "url": "https://github.com/iloveagents/azure-voice-live-react/issues"
@@ -41,11 +45,23 @@
     "dist",
     "README.md"
   ],
+  "workspaces": [
+    "playground"
+  ],
   "scripts": {
+    "dev": "npm run dev -w playground",
+    "dev:dist": "npm run build && npm run dev:dist -w playground",
     "build": "tsup",
-    "dev": "tsup --watch",
+    "build:watch": "tsup --watch",
     "type-check": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
+    "prepublishOnly": "npm run build && npm run type-check && npm run test",
+    "test:pack": "npm pack && cd playground && npm install ../iloveagents-azure-voice-live-react-0.1.0.tgz"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
@@ -54,8 +70,17 @@
   "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.0.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jsdom": "^23.0.0",
+    "prettier": "^3.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
   },
   "sideEffects": false,
   "publishConfig": {

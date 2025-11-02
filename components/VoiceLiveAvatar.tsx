@@ -1,5 +1,5 @@
 /**
- * AvatarDisplay Component
+ * VoiceLiveAvatar Component
  *
  * Reusable React component for displaying an Azure Voice Live avatar with video and audio.
  * Supports chroma key (green screen removal) and configurable controls.
@@ -13,20 +13,33 @@
  *
  * @example
  * ```tsx
- * <AvatarDisplay
+ * // Basic usage with original background
+ * <VoiceLiveAvatar
  *   videoStream={videoStream}
  *   audioStream={audioStream}
- *   loading={!isReady}
- *   enableChromaKey
- *   showControls
- *   controls={<Button>Pause</Button>}
+ *   transparentBackground={false}
+ * />
+ *
+ * // With transparent background (default)
+ * <VoiceLiveAvatar
+ *   videoStream={videoStream}
+ *   audioStream={audioStream}
+ *   transparentBackground
+ * />
+ *
+ * // Custom chroma key settings
+ * <VoiceLiveAvatar
+ *   videoStream={videoStream}
+ *   audioStream={audioStream}
+ *   transparentBackground
+ *   chromaKeyConfig={{ color: [0, 255, 0], threshold: 0.4 }}
  * />
  * ```
  */
 
 import React, { useRef, useEffect, useState, CSSProperties } from 'react';
 import { createChromaKeyProcessor, DEFAULT_GREEN_SCREEN } from '../utils/chromaKey';
-import type { AvatarDisplayProps } from '../types';
+import type { VoiceLiveAvatarProps } from '../types';
 
 /**
  * Default styles for the component
@@ -46,6 +59,14 @@ const defaultStyles: Record<string, CSSProperties> = {
     objectFit: 'contain',
   },
   video: {
+    width: '100%',
+    height: 'auto',
+    maxWidth: '100%',
+    maxHeight: '100%',
+    display: 'block',
+    objectFit: 'contain',
+  },
+  videoHidden: {
     display: 'none',
   },
   audio: {
@@ -76,7 +97,7 @@ const defaultStyles: Record<string, CSSProperties> = {
 /**
  * Avatar Display Component
  */
-export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
+export const VoiceLiveAvatar: React.FC<VoiceLiveAvatarProps> = ({
   videoStream,
   audioStream,
   loading = false,
@@ -86,7 +107,7 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
   className,
   canvasClassName,
   style,
-  enableChromaKey = true,
+  transparentBackground = true,
   chromaKeyConfig = DEFAULT_GREEN_SCREEN,
   onVideoReady,
   onAudioReady,
@@ -97,6 +118,9 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
   const chromaKeyProcessorRef = useRef<ReturnType<typeof createChromaKeyProcessor>>(null);
 
   const [showControlsState, setShowControlsState] = useState(false);
+
+  // Show loading state when no video stream
+  const isLoading = loading || !videoStream;
 
   /**
    * Setup video stream and chroma key when stream is available
@@ -110,7 +134,8 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
       video.autoplay = true;
 
       const handleLoadedMetadata = () => {
-        if (enableChromaKey && canvas) {
+        // Start chroma key processing for transparent background
+        if (transparentBackground && canvas) {
           chromaKeyProcessorRef.current = createChromaKeyProcessor(
             video,
             canvas,
@@ -132,7 +157,7 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
         chromaKeyProcessorRef.current = null;
       };
     }
-  }, [videoStream, enableChromaKey, chromaKeyConfig, onVideoReady]);
+  }, [videoStream, transparentBackground, chromaKeyConfig, onVideoReady]);
 
   /**
    * Setup audio stream when available
@@ -189,21 +214,28 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Hidden video element - source for chroma key processing */}
-      <video ref={videoRef} style={defaultStyles.video} />
-
-      {/* Canvas for chroma key output */}
-      <canvas
-        ref={canvasRef}
-        className={canvasClassName}
-        style={canvasClassName ? undefined : defaultStyles.canvas}
+      {/* Video element - shown directly when transparent background is disabled, hidden when enabled */}
+      <video
+        ref={videoRef}
+        style={transparentBackground ? defaultStyles.videoHidden : defaultStyles.video}
+        autoPlay
+        playsInline
       />
+
+      {/* Canvas for transparent background - only shown when transparentBackground is enabled */}
+      {transparentBackground && (
+        <canvas
+          ref={canvasRef}
+          className={canvasClassName}
+          style={canvasClassName ? undefined : defaultStyles.canvas}
+        />
+      )}
 
       {/* Hidden audio element */}
       <audio ref={audioRef} style={defaultStyles.audio} />
 
       {/* Loading state */}
-      {loading && (
+      {isLoading && (
         <div style={defaultStyles.loadingContainer}>
           <div>{loadingMessage}</div>
         </div>

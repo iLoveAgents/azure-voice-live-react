@@ -54,7 +54,7 @@ export type VoiceLiveModel = KnownVoiceLiveModel | (string & {});
  */
 export interface VoiceLiveConnectionConfig {
   /** Azure AI Foundry resource name */
-  resourceName: string;
+  resourceName?: string;
 
   /** API key authentication (or use token for Microsoft Entra) */
   apiKey?: string;
@@ -79,8 +79,31 @@ export interface VoiceLiveConnectionConfig {
   /** Agent ID for Azure AI Agent Service */
   agentId?: string;
 
-  /** Project ID for Azure AI Agent Service */
+  /** Project name for Azure AI Agent Service (recommended) */
+  projectName?: string;
+
+  /** Project ID for Azure AI Agent Service (deprecated - use projectName) */
   projectId?: string;
+
+  /** Agent access token for Azure AI Agent Service (required for Agent mode) */
+  agentAccessToken?: string;
+
+  // ===== Proxy Mode =====
+
+  /**
+   * Proxy WebSocket URL (for secure backend proxy)
+   * When set, overrides all other connection parameters
+   *
+   * Supports @iloveagents/azure-voice-live-proxy or custom proxy servers.
+   * Mode is automatically detected by the proxy based on URL parameters.
+   *
+   * Standard mode: 'ws://localhost:8080/ws?model=gpt-realtime'
+   * Standard with MSAL: 'ws://localhost:8080/ws?model=gpt-realtime&token=${msalToken}'
+   * Agent mode (auto-detected): 'ws://localhost:8080/ws?agentId=xxx&projectName=yyy&token=${msalToken}'
+   *
+   * @see {@link https://github.com/iLoveAgents/azure-voice-live-proxy}
+   */
+  proxyUrl?: string;
 }
 
 // ============================================================================
@@ -721,6 +744,41 @@ export interface UseVoiceLiveConfig {
    */
   session?: VoiceLiveSessionConfig;
 
+  // ===== Audio Capture Configuration =====
+
+  /**
+   * Automatically start microphone when session is ready
+   * Set to false if you want manual control over mic start/stop
+   * @default true
+   */
+  autoStartMic?: boolean;
+
+  /**
+   * Audio sample rate for microphone capture
+   * Must match session.inputAudioSamplingRate
+   * @default 24000
+   */
+  audioSampleRate?: number;
+
+  /**
+   * Audio constraints for microphone selection
+   * Use to specify which microphone device to use
+   *
+   * @example
+   * ```ts
+   * // Use specific device
+   * audioConstraints: { deviceId: 'device-id-here' }
+   *
+   * // Request echo cancellation, noise suppression
+   * audioConstraints: {
+   *   echoCancellation: true,
+   *   noiseSuppression: true,
+   *   autoGainControl: true
+   * }
+   * ```
+   */
+  audioConstraints?: MediaTrackConstraints | boolean;
+
   // ===== Lifecycle & Handlers =====
 
   /**
@@ -753,8 +811,17 @@ export interface UseVoiceLiveReturn {
   /** Audio stream for avatar */
   audioStream: MediaStream | null;
 
+  /** Audio context for visualization and analysis */
+  audioContext: AudioContext | null;
+
+  /** Audio analyser node for visualization (pre-configured for frequency analysis) */
+  audioAnalyser: AnalyserNode | null;
+
   /** Whether the session is ready for interaction */
   isReady: boolean;
+
+  /** Whether microphone is currently active */
+  isMicActive: boolean;
 
   /** Error message if any */
   error: string | null;
@@ -765,11 +832,20 @@ export interface UseVoiceLiveReturn {
   /** Disconnect from Voice Live API */
   disconnect: () => void;
 
+  /** Start microphone capture (for manual control) */
+  startMic: () => Promise<void>;
+
+  /** Stop microphone capture (for manual control) */
+  stopMic: () => void;
+
   /** Send an event to the API */
   sendEvent: (event: any) => void;
 
   /** Update session configuration */
   updateSession: (config: Partial<VoiceLiveSessionConfig>) => void;
+
+  /** Get current audio playback time in milliseconds (for viseme synchronization) */
+  getAudioPlaybackTime: () => number | null;
 }
 
 // ============================================================================

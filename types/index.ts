@@ -100,10 +100,18 @@ export interface VoiceLiveConfig {
 export interface AudioCaptureConfig {
   /** Sample rate for audio processing (default: 24000) */
   sampleRate?: number;
-  /** Path to AudioWorklet processor script (default: '/audio-processor.js') */
+  /**
+   * Optional path to custom AudioWorklet processor script.
+   * If not provided, uses inline processor (zero config).
+   * Advanced: Provide custom path for specialized audio processing.
+   */
   workletPath?: string;
   /** Audio constraints for getUserMedia */
   audioConstraints?: MediaTrackConstraints;
+  /** Callback for receiving processed audio data */
+  onAudioData?: AudioDataCallback;
+  /** Whether to automatically start capture */
+  autoStart?: boolean;
 }
 
 // ==================== Hook Return Types ====================
@@ -166,9 +174,9 @@ export interface VoiceLiveReturn {
 // ==================== Component Props ====================
 
 /**
- * Props for AvatarDisplay component
+ * Props for VoiceLiveAvatar component
  */
-export interface AvatarDisplayProps {
+export interface VoiceLiveAvatarProps {
   /** Video stream from the avatar */
   videoStream: MediaStream | null;
   /** Audio stream from the avatar */
@@ -187,9 +195,9 @@ export interface AvatarDisplayProps {
   canvasClassName?: string;
   /** Inline styles for the container */
   style?: React.CSSProperties;
-  /** Whether to enable chroma key (green screen removal) */
-  enableChromaKey?: boolean;
-  /** Chroma key configuration */
+  /** Whether to enable transparent background (removes green screen via chroma key). Default: true */
+  transparentBackground?: boolean;
+  /** Optional chroma key configuration for customizing background removal (color, threshold, etc.) */
   chromaKeyConfig?: ChromaKeyConfig;
   /** Callback when video metadata is loaded */
   onVideoReady?: () => void;

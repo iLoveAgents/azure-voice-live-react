@@ -12,7 +12,7 @@ export { useAudioCapture } from './hooks/useAudioCapture';
 export { useVoiceLive } from './hooks/useVoiceLive';
 
 // ==================== Components ====================
-export { AvatarDisplay } from './components/AvatarDisplay';
+export { VoiceLiveAvatar } from './components/VoiceLiveAvatar';
 
 // ==================== Utilities ====================
 export {
@@ -28,13 +28,18 @@ export {
 } from './utils/sessionBuilder';
 
 export {
+  arrayBufferToBase64,
+  createAudioDataCallback,
+} from './utils/audioHelpers';
+
+export {
   // Voice helpers
   withVoice,
   withHDVoice,
   withCustomVoice,
   // Avatar helpers
   withAvatar,
-  withGreenScreen,
+  withTransparentBackground,
   withBackgroundImage,
   withAvatarCrop,
   // Turn detection helpers
@@ -62,25 +67,9 @@ export {
   compose,
 } from './utils/configHelpers';
 
-// ==================== Presets ====================
+// ==================== Configuration ====================
 export {
-  VOICE_LIVE_PRESETS,
-  DEFAULT_PRESET,
-  CALL_CENTER_PRESET,
-  AUTOMOTIVE_PRESET,
-  EDUCATION_PRESET,
-  GAMING_PRESET,
-  ACCESSIBILITY_PRESET,
-  MULTILINGUAL_PRESET,
-  HIGH_PERFORMANCE_PRESET,
   createVoiceLiveConfig,
-  createCallCenterConfig,
-  createAutomotiveConfig,
-  createEducationConfig,
-  createGamingConfig,
-  createAccessibilityConfig,
-  createMultilingualConfig,
-  type PresetName,
 } from './presets';
 
 // ==================== Types ====================
@@ -102,7 +91,7 @@ export type {
   ConnectionState,
 
   // Component props
-  AvatarDisplayProps,
+  VoiceLiveAvatarProps,
 
   // Event handlers
   VoiceLiveEventHandler,
