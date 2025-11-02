@@ -4,22 +4,46 @@ Development workspace for the `@iloveagents/azure-voice-live-react` library.
 
 ## Quick Start
 
-From library root:
+1. **Set up environment variables** (one-time setup):
+
+```bash
+cd playground
+cp .env.example .env
+# Edit .env and add your Azure credentials
+```
+
+2. **Start development** (from library root):
 
 ```bash
 npm run dev
 ```
 
-Open <http://localhost:3000> and enter your Azure credentials.
+3. Open <http://localhost:3000> - credentials auto-loaded from `.env`!
 
 ## Purpose
 
 This playground is used for library development and testing. It demonstrates:
 
+- **Voice Only Mode**: Audio-only conversation (lower bandwidth)
+- **Voice + Avatar Mode**: Full audio + video with Lisa avatar
 - Using `createCallCenterConfig` preset
-- Connecting to Azure Voice Live API
-- Displaying avatar video stream
 - Managing connection with `useVoiceLive` hook
+
+## Environment Variables
+
+Create a `.env` file in the `playground/` directory:
+
+```bash
+# Required
+VITE_AZURE_AI_FOUNDRY_RESOURCE=your-resource-name
+VITE_AZURE_SPEECH_KEY=your-api-key
+
+# Optional (for avatar mode)
+VITE_AVATAR_CHARACTER=lisa
+VITE_AVATAR_STYLE=casual-sitting
+```
+
+These values will auto-populate the form fields when you start the playground.
 
 ## Configuration
 

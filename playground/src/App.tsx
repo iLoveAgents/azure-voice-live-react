@@ -5,8 +5,10 @@ type Mode = 'voice-only' | 'avatar';
 
 function App() {
   const [mode, setMode] = useState<Mode>('voice-only');
-  const [resourceName, setResourceName] = useState('');
-  const [apiKey, setApiKey] = useState('');
+  const [resourceName, setResourceName] = useState(
+    import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE || ''
+  );
+  const [apiKey, setApiKey] = useState(import.meta.env.VITE_AZURE_SPEECH_KEY || '');
   const [instructions, setInstructions] = useState('You are a helpful AI assistant.');
 
   // Voice-only configuration (no avatar)
