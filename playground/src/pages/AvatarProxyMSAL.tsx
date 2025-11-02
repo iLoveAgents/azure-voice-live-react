@@ -4,10 +4,11 @@ import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 
-export function VoiceProxyMSAL() {
+export function AvatarProxyMSAL() {
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { instance, accounts } = useMsal();
 
@@ -61,16 +62,24 @@ export function VoiceProxyMSAL() {
     }
   }, [accounts]);
 
-  const config = createVoiceLiveConfig('default', {
+  const config = createVoiceLiveConfig('avatar', {
     connection: {
       customWebSocketUrl: wsUrl || undefined,
     },
     session: {
+      voice: {
+        name: 'en-US-Ava:DragonHDLatestNeural',
+        type: 'azure-standard',
+      },
+      avatar: {
+        character: import.meta.env.VITE_AVATAR_CHARACTER || 'lisa',
+        style: import.meta.env.VITE_AVATAR_STYLE || 'casual-sitting',
+      },
       instructions: 'You are a helpful assistant. Keep responses brief.',
     },
   });
 
-  const { connect, disconnect, connectionState, sendEvent, audioStream } = useVoiceLive(config);
+  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
@@ -80,6 +89,13 @@ export function VoiceProxyMSAL() {
       sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
     }, [sendEvent]),
   });
+
+  useEffect(() => {
+    if (videoRef.current && videoStream) {
+      videoRef.current.srcObject = videoStream;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [videoStream]);
 
   useEffect(() => {
     if (audioRef.current && audioStream) {
@@ -94,12 +110,9 @@ export function VoiceProxyMSAL() {
       return;
     }
 
-    console.log('Starting...');
     try {
       await connect();
-      console.log('Connected');
       await startCapture();
-      console.log('Mic started');
     } catch (err) {
       console.error('Start error:', err);
     }
@@ -121,7 +134,7 @@ export function VoiceProxyMSAL() {
   return (
     <div>
       <Link to="/">← Back</Link>
-      <h1>Voice Chat - Secure Proxy (MSAL)</h1>
+      <h1>Avatar - Secure Proxy (MSAL)</h1>
 
       {accounts.length === 0 ? (
         <div style={{ marginBottom: '1rem' }}>
@@ -142,6 +155,12 @@ export function VoiceProxyMSAL() {
         <button onClick={handleStart} disabled={isConnected || !wsUrl}>Start</button>
         <button onClick={handleStop} disabled={!isConnected}>Stop</button>
       </div>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        style={{ width: '100%', maxWidth: '512px', background: '#000', marginTop: '1rem' }}
+      />
       <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
     </div>
   );

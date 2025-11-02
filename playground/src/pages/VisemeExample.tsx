@@ -12,6 +12,7 @@ export function VisemeExample() {
   const [visemeHistory, setVisemeHistory] = useState<Array<{viseme: number, offset: number}>>([]);
   const visemeBufferRef = useRef<VisemeData[]>([]);
   const animationFrameRef = useRef<number>();
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Enable viseme output
   // IMPORTANT: Visemes only work with Azure STANDARD voices (not HD or OpenAI voices)
@@ -29,7 +30,7 @@ export function VisemeExample() {
     }),
   });
 
-  const { connect, disconnect, connectionState, sendEvent, getAudioPlaybackTime } = useVoiceLive({
+  const { connect, disconnect, connectionState, sendEvent, getAudioPlaybackTime, audioStream } = useVoiceLive({
     ...config,
     onEvent: useCallback((event: any) => {
       if (event.type === 'response.animation_viseme.delta') {
@@ -55,6 +56,14 @@ export function VisemeExample() {
       sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
     }, [sendEvent]),
   });
+
+  // Connect audio stream to audio element
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [audioStream]);
 
   // Synchronize viseme display with audio playback
   useEffect(() => {
@@ -197,6 +206,7 @@ export function VisemeExample() {
           )}
         </div>
       </div>
+      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
     </div>
   );
 }

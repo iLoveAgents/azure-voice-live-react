@@ -10,6 +10,7 @@ import { VoiceProxyMSAL } from './pages/VoiceProxyMSAL';
 import { AvatarBasic } from './pages/AvatarBasic';
 import { AvatarAdvanced } from './pages/AvatarAdvanced';
 import { AvatarProxy } from './pages/AvatarProxy';
+import { AvatarProxyMSAL } from './pages/AvatarProxyMSAL';
 import { FunctionCalling } from './pages/FunctionCalling';
 import { AudioVisualizer } from './pages/AudioVisualizer';
 import { VisemeExample } from './pages/VisemeExample';
@@ -56,6 +57,7 @@ function App() {
           <Route path="/avatar-basic" element={<AvatarBasic />} />
           <Route path="/avatar-advanced" element={<AvatarAdvanced />} />
           <Route path="/avatar-proxy" element={<AvatarProxy />} />
+          <Route path="/avatar-proxy-msal" element={<AvatarProxyMSAL />} />
           <Route path="/agent-service" element={<AgentService />} />
           <Route path="/function-calling" element={<FunctionCalling />} />
           <Route path="/audio-visualizer" element={<AudioVisualizer />} />

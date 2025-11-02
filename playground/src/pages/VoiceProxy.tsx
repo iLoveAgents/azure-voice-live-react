@@ -52,28 +52,13 @@ export function VoiceProxy() {
   return (
     <div>
       <Link to="/">← Back</Link>
-      <h1>Voice Chat - Secure Proxy</h1>
-      <p>
-        <strong>Production-ready:</strong> API key secured in backend proxy.
-        <br />
-        No credentials exposed to browser.
-      </p>
+      <h1>Voice Chat - Secure Proxy (API Key)</h1>
       <p>Status: {connectionState}</p>
       <div>
         <button onClick={handleStart} disabled={isConnected}>Start</button>
         <button onClick={handleStop} disabled={!isConnected}>Stop</button>
       </div>
       <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-
-      <div style={{ marginTop: '2rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
-        <h3>How it works:</h3>
-        <ol>
-          <li>Browser connects to backend proxy (no API key needed)</li>
-          <li>Proxy adds API key from .env (secured server-side)</li>
-          <li>Proxy forwards to Azure Voice Live</li>
-        </ol>
-        <p><strong>To switch to proxy:</strong> Just change <code>customWebSocketUrl</code> in connection config.</p>
-      </div>
     </div>
   );
 }
