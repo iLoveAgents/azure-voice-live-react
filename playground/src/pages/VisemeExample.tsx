@@ -1,10 +1,17 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, withViseme } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
+
+interface VisemeData {
+  viseme_id: number;
+  audio_offset_ms: number;
+}
 
 export function VisemeExample() {
   const [currentViseme, setCurrentViseme] = useState<number | null>(null);
   const [visemeHistory, setVisemeHistory] = useState<Array<{viseme: number, offset: number}>>([]);
+  const visemeBufferRef = useRef<VisemeData[]>([]);
+  const animationFrameRef = useRef<number>();
 
   // Enable viseme output
   // IMPORTANT: Visemes only work with Azure STANDARD voices (not HD or OpenAI voices)
@@ -14,7 +21,7 @@ export function VisemeExample() {
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
     },
     session: withViseme({
-      instructions: 'You are a helpful assistant. Keep responses brief.',
+      instructions: 'You are a helpful assistant. Always respond in English. Keep responses brief.',
       voice: {
         name: 'en-US-AvaNeural', // Standard voice (HD voices don't support viseme)
         type: 'azure-standard',
@@ -22,12 +29,20 @@ export function VisemeExample() {
     }),
   });
 
-  const { connect, disconnect, connectionState, sendEvent } = useVoiceLive({
+  const { connect, disconnect, connectionState, sendEvent, getAudioPlaybackTime } = useVoiceLive({
     ...config,
     onEvent: useCallback((event: any) => {
       if (event.type === 'response.animation_viseme.delta') {
-        setCurrentViseme(event.viseme_id);
+        // Buffer viseme events for synchronized playback
+        visemeBufferRef.current.push({
+          viseme_id: event.viseme_id,
+          audio_offset_ms: event.audio_offset_ms,
+        });
         setVisemeHistory(prev => [...prev.slice(-20), { viseme: event.viseme_id, offset: event.audio_offset_ms }]);
+      }
+      if (event.type === 'response.created') {
+        // Clear buffer for new response
+        visemeBufferRef.current = [];
       }
     }, []),
   });
@@ -40,6 +55,41 @@ export function VisemeExample() {
       sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
     }, [sendEvent]),
   });
+
+  // Synchronize viseme display with audio playback
+  useEffect(() => {
+    const syncVisemes = () => {
+      const currentTime = getAudioPlaybackTime();
+
+      if (currentTime !== null && visemeBufferRef.current.length > 0) {
+        // Find the viseme that should be displayed at the current playback time
+        // We want the most recent viseme that has already occurred
+        let activeViseme: VisemeData | null = null;
+
+        for (const viseme of visemeBufferRef.current) {
+          if (viseme.audio_offset_ms <= currentTime) {
+            activeViseme = viseme;
+          } else {
+            break; // Visemes are in chronological order
+          }
+        }
+
+        if (activeViseme && activeViseme.viseme_id !== currentViseme) {
+          setCurrentViseme(activeViseme.viseme_id);
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(syncVisemes);
+    };
+
+    syncVisemes();
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [getAudioPlaybackTime, currentViseme]);
 
   const handleStart = async () => {
     try {

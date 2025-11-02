@@ -773,6 +773,9 @@ export interface UseVoiceLiveReturn {
 
   /** Update session configuration */
   updateSession: (config: Partial<VoiceLiveSessionConfig>) => void;
+
+  /** Get current audio playback time in milliseconds (for viseme synchronization) */
+  getAudioPlaybackTime: () => number | null;
 }
 
 // ============================================================================

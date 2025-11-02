@@ -93,6 +93,8 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
   const nextPlayTimeRef = useRef<number>(0);
   const currentResponseIdRef = useRef<string | null>(null);
+  const responseStartTimeRef = useRef<number | null>(null);
+  const isFirstChunkRef = useRef<boolean>(true);
 
   /**
    * Send an event to the Voice Live API
@@ -192,6 +194,12 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       // Calculate scheduled play time for sequential playback
       const currentTime = audioContext.currentTime;
       const scheduleTime = Math.max(currentTime, nextPlayTimeRef.current);
+
+      // Track response start time (for viseme synchronization)
+      if (isFirstChunkRef.current) {
+        responseStartTimeRef.current = scheduleTime;
+        isFirstChunkRef.current = false;
+      }
 
       // Create and schedule audio source
       const source = audioContext.createBufferSource();
@@ -351,6 +359,9 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           // Track current response for interruption handling
           if (data.response?.id) {
             currentResponseIdRef.current = data.response.id;
+            // Reset for new response (for viseme sync)
+            isFirstChunkRef.current = true;
+            responseStartTimeRef.current = null;
           }
           break;
 
@@ -549,6 +560,18 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     };
   }, [disconnect]);
 
+  /**
+   * Get current audio playback time in milliseconds
+   * Used for synchronizing visemes with audio playback
+   */
+  const getAudioPlaybackTime = useCallback((): number | null => {
+    if (!audioContextRef.current || responseStartTimeRef.current === null) {
+      return null;
+    }
+    const elapsed = audioContextRef.current.currentTime - responseStartTimeRef.current;
+    return Math.max(0, elapsed * 1000); // Convert to milliseconds
+  }, []);
+
   return {
     connectionState,
     videoStream,
@@ -560,5 +583,6 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     disconnect,
     sendEvent,
     updateSession,
+    getAudioPlaybackTime,
   };
 }
