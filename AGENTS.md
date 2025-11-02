@@ -86,7 +86,7 @@ azure-voice-live-react/
 ├── index.ts              # Library exports (edit this when adding features)
 ├── types/                # TypeScript definitions
 ├── hooks/                # React hooks (useVoiceLive, useAudioCapture)
-├── components/           # React components (AvatarDisplay)
+├── components/           # React components (VoiceLiveAvatar)
 ├── services/             # WebSocket, WebRTC services
 ├── utils/                # Builders, presets, helpers
 └── playground/           # Development workspace (npm workspace)

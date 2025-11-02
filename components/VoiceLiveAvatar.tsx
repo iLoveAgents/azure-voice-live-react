@@ -1,5 +1,5 @@
 /**
- * AvatarDisplay Component
+ * VoiceLiveAvatar Component
  *
  * Reusable React component for displaying an Azure Voice Live avatar with video and audio.
  * Supports chroma key (green screen removal) and configurable controls.
@@ -13,7 +13,7 @@
  *
  * @example
  * ```tsx
- * <AvatarDisplay
+ * <VoiceLiveAvatar
  *   videoStream={videoStream}
  *   audioStream={audioStream}
  *   loading={!isReady}
@@ -26,7 +26,7 @@
 
 import React, { useRef, useEffect, useState, CSSProperties } from 'react';
 import { createChromaKeyProcessor, DEFAULT_GREEN_SCREEN } from '../utils/chromaKey';
-import type { AvatarDisplayProps } from '../types';
+import type { VoiceLiveAvatarProps } from '../types';
 
 /**
  * Default styles for the component
@@ -76,7 +76,7 @@ const defaultStyles: Record<string, CSSProperties> = {
 /**
  * Avatar Display Component
  */
-export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
+export const VoiceLiveAvatar: React.FC<VoiceLiveAvatarProps> = ({
   videoStream,
   audioStream,
   loading = false,

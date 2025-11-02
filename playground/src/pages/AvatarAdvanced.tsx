@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useVoiceLive, useAudioCapture, AvatarDisplay, createVoiceLiveConfig, withGreenScreen } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, useAudioCapture, VoiceLiveAvatar, createVoiceLiveConfig, withGreenScreen } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function AvatarAdvanced() {
@@ -85,7 +85,7 @@ export function AvatarAdvanced() {
         borderRadius: '8px',
         overflow: 'hidden'
       }}>
-        {videoStream && <AvatarDisplay videoStream={videoStream} audioStream={audioStream} enableChromaKey style={{ width: '100%', height: '100%' }} />}
+        {videoStream && <VoiceLiveAvatar videoStream={videoStream} audioStream={audioStream} enableChromaKey style={{ width: '100%', height: '100%' }} />}
       </div>
 
       <div style={{ marginTop: '20px' }}>

@@ -12,7 +12,7 @@ export { useAudioCapture } from './hooks/useAudioCapture';
 export { useVoiceLive } from './hooks/useVoiceLive';
 
 // ==================== Components ====================
-export { AvatarDisplay } from './components/AvatarDisplay';
+export { VoiceLiveAvatar } from './components/VoiceLiveAvatar';
 
 // ==================== Utilities ====================
 export {
@@ -102,7 +102,7 @@ export type {
   ConnectionState,
 
   // Component props
-  AvatarDisplayProps,
+  VoiceLiveAvatarProps,
 
   // Event handlers
   VoiceLiveEventHandler,

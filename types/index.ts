@@ -170,9 +170,9 @@ export interface VoiceLiveReturn {
 // ==================== Component Props ====================
 
 /**
- * Props for AvatarDisplay component
+ * Props for VoiceLiveAvatar component
  */
-export interface AvatarDisplayProps {
+export interface VoiceLiveAvatarProps {
   /** Video stream from the avatar */
   videoStream: MediaStream | null;
   /** Audio stream from the avatar */

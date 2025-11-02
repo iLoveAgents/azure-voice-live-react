@@ -60,7 +60,7 @@ pnpm add @iloveagents/azure-voice-live-react
 ### Basic Implementation
 
 ```tsx
-import { useVoiceLive, AvatarDisplay } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, VoiceLiveAvatar } from '@iloveagents/azure-voice-live-react';
 
 function VoiceAssistant() {
   const { videoStream, connect, disconnect, connectionState } = useVoiceLive({
@@ -77,7 +77,7 @@ function VoiceAssistant() {
 
   return (
     <div>
-      <AvatarDisplay videoStream={videoStream} />
+      <VoiceLiveAvatar videoStream={videoStream} />
       <button onClick={connect} disabled={connectionState === 'connected'}>
         Connect
       </button>
@@ -100,7 +100,7 @@ function VoiceAssistant() {
 │   ├── useVoiceLive()        - Main Voice Live API integration
 │   └── useAudioCapture()     - Microphone capture with AudioWorklet
 ├── Components
-│   └── AvatarDisplay         - Avatar video with chroma key support
+│   └── VoiceLiveAvatar         - Avatar video with chroma key support
 ├── Configuration
 │   ├── Session Builder       - Type-safe configuration builder
 │   ├── Presets              - 8 optimized scenario configurations
@@ -288,14 +288,14 @@ interface UseVoiceLiveReturn {
 }
 ```
 
-### `AvatarDisplay` Component
+### `VoiceLiveAvatar` Component
 
 Component for rendering avatar video with optional chroma key compositing.
 
 **Props:**
 
 ```typescript
-interface AvatarDisplayProps {
+interface VoiceLiveAvatarProps {
   videoStream: MediaStream | null;
 
   // Chroma key settings
@@ -379,7 +379,7 @@ For complete type definitions, see the TypeScript types included with the packag
 ```tsx
 import {
   useVoiceLive,
-  AvatarDisplay,
+  VoiceLiveAvatar,
   withAvatar,
   withGreenScreen,
   compose
@@ -404,7 +404,7 @@ function AvatarApp() {
     }),
   });
 
-  return <AvatarDisplay videoStream={videoStream} enableChromaKey />;
+  return <VoiceLiveAvatar videoStream={videoStream} enableChromaKey />;
 }
 ```
 
@@ -450,7 +450,7 @@ function WeatherAssistant() {
     toolExecutor: executeTool,
   });
 
-  return <AvatarDisplay videoStream={videoStream} />;
+  return <VoiceLiveAvatar videoStream={videoStream} />;
 }
 ```
 
@@ -495,7 +495,7 @@ function EventMonitor() {
     onEvent: handleEvent,
   });
 
-  return <AvatarDisplay videoStream={videoStream} />;
+  return <VoiceLiveAvatar videoStream={videoStream} />;
 }
 ```
 
@@ -691,9 +691,45 @@ The library has zero runtime dependencies (except React), resulting in minimal b
 
 For more help, see [GitHub Issues](https://github.com/iloveagents/azure-voice-live-react/issues).
 
-## Demo Application
+## Examples & Playground
 
-A complete demo application is available showing real-world usage of all library features. See the [demo repository](../../) for examples.
+The library includes a comprehensive playground with working examples for all features:
+
+### Voice Examples
+
+- **[Voice Chat - Simple](./playground/src/pages/VoiceOnlyBasic.tsx)** - Basic voice-only implementation
+- **[Voice Chat - Advanced](./playground/src/pages/VoiceOnlyAdvanced.tsx)** - Full configuration with semantic VAD
+- **[Voice Chat - Secure Proxy](./playground/src/pages/VoiceProxy.tsx)** - Backend proxy with API key
+- **[Voice Chat - Secure Proxy (MSAL)](./playground/src/pages/VoiceProxyMSAL.tsx)** - User-level authentication
+
+### Avatar Examples
+
+- **[Avatar - Simple](./playground/src/pages/AvatarBasic.tsx)** - Basic avatar with video
+- **[Avatar - Advanced](./playground/src/pages/AvatarAdvanced.tsx)** - Chroma key + noise suppression
+- **[Avatar - Secure Proxy](./playground/src/pages/AvatarProxy.tsx)** - Backend proxy with API key
+- **[Avatar - Secure Proxy (MSAL)](./playground/src/pages/AvatarProxyMSAL.tsx)** - User-level authentication
+
+### Advanced Features
+
+- **[Function Calling](./playground/src/pages/FunctionCalling.tsx)** - Tool/function integration
+- **[Audio Visualizer](./playground/src/pages/AudioVisualizer.tsx)** - Real-time audio visualization
+- **[Viseme Animation](./playground/src/pages/VisemeExample.tsx)** - Custom avatar lip-sync
+- **[Agent Service](./playground/src/pages/AgentService.tsx)** - Azure AI Foundry Agent integration
+
+### Running the Playground
+
+```bash
+# Install and start
+npm install
+npm run dev
+
+# Optional: Start backend proxy for secure examples
+cd playground/backend
+npm install
+npm start
+```
+
+Open <http://localhost:3000> to explore all examples.
 
 ## Contributing
 

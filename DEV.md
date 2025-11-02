@@ -105,7 +105,7 @@ azure-voice-live-react/
 │   └── useAudioCapture.ts    # Audio capture
 │
 ├── components/                # React components
-│   └── AvatarDisplay.tsx     # Avatar display
+│   └── VoiceLiveAvatar.tsx     # Avatar display
 │
 ├── services/                  # Core services
 │   ├── websocket.service.ts  # WebSocket management
