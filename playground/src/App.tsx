@@ -4,6 +4,13 @@ import { useVoiceLive, AvatarDisplay, createCallCenterConfig } from '@iloveagent
 type Mode = 'voice-only' | 'avatar';
 
 function App() {
+  // Debug: Log all env vars
+  console.log('🔍 Environment variables:', {
+    resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
+    hasApiKey: !!import.meta.env.VITE_AZURE_SPEECH_KEY,
+    allEnv: import.meta.env,
+  });
+
   const [mode, setMode] = useState<Mode>('voice-only');
   const [resourceName, setResourceName] = useState(
     import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE || ''
@@ -12,38 +19,46 @@ function App() {
   const [instructions, setInstructions] = useState('You are a helpful AI assistant.');
 
   // Voice-only configuration (no avatar)
-  const voiceOnlyConfig = createCallCenterConfig({
-    connection: {
-      resourceName,
-      apiKey,
-    },
-    session: {
-      instructions,
-      voice: 'en-US-Ava:DragonHDLatestNeural',
-      // No avatar configuration
-    },
-  });
+  const voiceOnlyConfig = createCallCenterConfig(
+    { resourceName, apiKey }, // connection as first parameter
+    {
+      session: {
+        instructions,
+        voice: 'en-US-Ava:DragonHDLatestNeural',
+        // No avatar configuration
+      },
+    }
+  );
 
   // Avatar configuration
-  const avatarConfig = createCallCenterConfig({
-    connection: {
-      resourceName,
-      apiKey,
-    },
-    session: {
-      instructions,
-      voice: 'en-US-Ava:DragonHDLatestNeural',
-      avatar: {
-        character: 'lisa',
-        style: 'casual-sitting',
+  const avatarConfig = createCallCenterConfig(
+    { resourceName, apiKey }, // connection as first parameter
+    {
+      session: {
+        instructions,
+        voice: 'en-US-Ava:DragonHDLatestNeural',
+        avatar: {
+          character: 'lisa',
+          style: 'casual-sitting',
+        },
       },
-    },
-  });
+    }
+  );
 
   const config = mode === 'voice-only' ? voiceOnlyConfig : avatarConfig;
+
+  // Debug: Log config before using it
+  console.log('🔧 Config being used:', {
+    mode,
+    resourceName: config.connection.resourceName,
+    hasApiKey: !!config.connection.apiKey,
+    fullConfig: config,
+  });
+
   const { videoStream, connect, disconnect, connectionState } = useVoiceLive(config);
 
   const handleConnect = () => {
+    console.log('🔌 handleConnect called with:', { resourceName, apiKey: apiKey?.substring(0, 10) + '...' });
     if (!resourceName || !apiKey) {
       alert('Please enter Azure resource name and API key');
       return;

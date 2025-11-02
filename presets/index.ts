@@ -68,17 +68,10 @@ export const CALL_CENTER_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad',
     threshold: 0.5,
     prefixPaddingMs: 300,
-    speechDurationMs: 80,
     silenceDurationMs: 400, // Slightly faster response
     removeFillerWords: true, // Critical for reducing false barge-ins
     interruptResponse: true, // Allow customer to interrupt
     createResponse: true,
-    autoTruncate: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1',
-      thresholdLevel: 'medium',
-      timeoutMs: 800, // Slightly faster
-    },
   },
 
   // Voice: Clear, professional
@@ -107,16 +100,10 @@ export const AUTOMOTIVE_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad',
     threshold: 0.6, // Higher threshold for road noise
     prefixPaddingMs: 400, // More padding for far-field
-    speechDurationMs: 100,
     silenceDurationMs: 700, // Longer silence for natural pauses
     removeFillerWords: false, // Allow natural speech patterns
     interruptResponse: false, // Don't interrupt while driving
     createResponse: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1',
-      thresholdLevel: 'low', // More patient
-      timeoutMs: 1200,
-    },
   },
 
   // Voice: Clear, slightly louder/energetic
@@ -148,16 +135,10 @@ export const EDUCATION_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad',
     threshold: 0.4, // Lower threshold (more sensitive)
     prefixPaddingMs: 400,
-    speechDurationMs: 80,
     silenceDurationMs: 900, // Very long silence allowed (student thinking)
     removeFillerWords: false, // Allow natural student speech
     interruptResponse: false, // Never interrupt the student
     createResponse: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1',
-      thresholdLevel: 'low', // Very patient
-      timeoutMs: 1500, // Long timeout for thinking
-    },
   },
 
   // Voice: Warm, encouraging
@@ -186,16 +167,10 @@ export const GAMING_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad',
     threshold: 0.5,
     prefixPaddingMs: 200, // Minimal padding
-    speechDurationMs: 60, // Quick detection
     silenceDurationMs: 300, // Short silence
     removeFillerWords: true,
     interruptResponse: true,
     createResponse: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1',
-      thresholdLevel: 'high', // Quick decisions
-      timeoutMs: 600, // Fast timeout
-    },
   },
 
   // Voice: Energetic, variable
@@ -228,16 +203,10 @@ export const ACCESSIBILITY_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad',
     threshold: 0.3, // Very sensitive
     prefixPaddingMs: 500,
-    speechDurationMs: 80,
     silenceDurationMs: 1000, // Very long silence
     removeFillerWords: false,
     interruptResponse: false, // Never interrupt
     createResponse: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1',
-      thresholdLevel: 'low', // Very patient
-      timeoutMs: 2000, // Very long timeout
-    },
   },
 
   // Voice: Clear, slower pace
@@ -273,17 +242,11 @@ export const MULTILINGUAL_PRESET: Partial<VoiceLiveSessionConfig> = {
     type: 'azure_semantic_vad_multilingual',
     threshold: 0.5,
     prefixPaddingMs: 300,
-    speechDurationMs: 80,
     silenceDurationMs: 500,
     removeFillerWords: true,
     languages: ['en', 'es', 'fr', 'de', 'it', 'ja', 'pt', 'zh', 'ko', 'hi'],
     interruptResponse: true,
     createResponse: true,
-    endOfUtteranceDetection: {
-      model: 'semantic_detection_v1_multilingual',
-      thresholdLevel: 'default',
-      timeoutMs: 1000,
-    },
   },
 
   // Voice: Standard
