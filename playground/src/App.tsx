@@ -1,5 +1,10 @@
-import { useState } from 'react';
-import { useVoiceLive, AvatarDisplay, createCallCenterConfig } from '@iloveagents/azure-voice-live-react';
+import { useState, useCallback } from 'react';
+import {
+  useVoiceLive,
+  useAudioCapture,
+  AvatarDisplay,
+  createCallCenterConfig,
+} from '@iloveagents/azure-voice-live-react';
 
 type Mode = 'voice-only' | 'avatar';
 
@@ -55,15 +60,44 @@ function App() {
     fullConfig: config,
   });
 
-  const { videoStream, connect, disconnect, connectionState } = useVoiceLive(config);
+  const { videoStream, connect, disconnect, connectionState, sendEvent } =
+    useVoiceLive(config);
 
-  const handleConnect = () => {
-    console.log('🔌 handleConnect called with:', { resourceName, apiKey: apiKey?.substring(0, 10) + '...' });
+  // Audio capture hook
+  const { startCapture, stopCapture } = useAudioCapture({
+    sampleRate: 24000,
+    workletPath: '/audio-processor.js',
+    onAudioData: useCallback(
+      (audioData: ArrayBuffer) => {
+        if (connectionState === 'connected') {
+          const uint8Array = new Uint8Array(audioData);
+          const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
+          sendEvent({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio,
+          });
+        }
+      },
+      [connectionState, sendEvent]
+    ),
+  });
+
+  const handleConnect = async () => {
+    console.log('🔌 handleConnect called with:', {
+      resourceName,
+      apiKey: apiKey?.substring(0, 10) + '...',
+    });
     if (!resourceName || !apiKey) {
       alert('Please enter Azure resource name and API key');
       return;
     }
-    connect();
+    await connect();
+    await startCapture();
+  };
+
+  const handleDisconnect = async () => {
+    await stopCapture();
+    disconnect();
   };
 
   return (
@@ -171,7 +205,7 @@ function App() {
             Connect
           </button>
           <button
-            onClick={disconnect}
+            onClick={handleDisconnect}
             disabled={connectionState === 'disconnected'}
             style={{
               padding: '10px 20px',
