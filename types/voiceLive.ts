@@ -79,8 +79,14 @@ export interface VoiceLiveConnectionConfig {
   /** Agent ID for Azure AI Agent Service */
   agentId?: string;
 
-  /** Project ID for Azure AI Agent Service */
+  /** Project name for Azure AI Agent Service (recommended) */
+  projectName?: string;
+
+  /** Project ID for Azure AI Agent Service (deprecated - use projectName) */
   projectId?: string;
+
+  /** Agent access token for Azure AI Agent Service (required for Agent mode) */
+  agentAccessToken?: string;
 }
 
 // ============================================================================

@@ -51,7 +51,7 @@ import type {
   UseVoiceLiveConfig,
   UseVoiceLiveReturn,
 } from '../types/voiceLive';
-import { buildSessionConfig } from '../utils/sessionBuilder';
+import { buildSessionConfig, buildAgentSessionConfig } from '../utils/sessionBuilder';
 
 /**
  * Utility to get timestamp for logging
@@ -426,30 +426,45 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       setConnectionState('connecting');
 
       // Build WebSocket URL
-      const isAgentMode = !!(connection.agentId && connection.projectId);
+      const projectIdentifier = connection.projectName || connection.projectId;
+      const isAgentMode = !!(connection.agentId && projectIdentifier);
       let wsUrl: string;
 
       if (isAgentMode) {
-        // Agent Service mode
+        // Agent Service mode - per Azure docs: use agent-id and agent-project-name
         wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
           connection.apiVersion || '2025-10-01'
-        }&agent_id=${connection.agentId}&project_id=${connection.projectId}`;
+        }&agent-id=${connection.agentId}&agent-project-name=${projectIdentifier}`;
+
+        // Agent Service authentication: ONLY agent-access-token query parameter
+        // Note: API key auth is explicitly NOT supported in Agent mode (server returns error)
+        // Browser limitation: Can't set Authorization header, so token must go in query param
+        if (connection.agentAccessToken) {
+          wsUrl += `&agent-access-token=${encodeURIComponent(connection.agentAccessToken)}`;
+        } else {
+          throw new Error('agentAccessToken is required for Agent Service mode.');
+        }
       } else {
         // Standard mode with model
         const model = connection.model || 'gpt-realtime'; // Default to best quality
         wsUrl = `wss://${connection.resourceName}.services.ai.azure.com/voice-live/realtime?api-version=${
           connection.apiVersion || '2025-10-01'
         }&model=${model}`;
-      }
 
-      // Add authentication
-      if (connection.apiKey) {
-        wsUrl += `&api-key=${encodeURIComponent(connection.apiKey)}`;
+        // Standard mode authentication: use api-key
+        if (connection.apiKey) {
+          wsUrl += `&api-key=${encodeURIComponent(connection.apiKey)}`;
+        }
+        // Note: Token auth via Authorization header would need different WebSocket setup
       }
-      // Note: Token auth via Authorization header would need different WebSocket setup
 
       console.log(`[${getTimestamp()}] Connecting to Voice Live API...`);
-      console.log(`[${getTimestamp()}] Model: ${connection.model || 'gpt-realtime'}`);
+      console.log(`[${getTimestamp()}] URL: ${wsUrl.replace(/api-key=[^&]+/, 'api-key=***').replace(/agent-access-token=[^&]+/, 'agent-access-token=***')}`);
+      if (isAgentMode) {
+        console.log(`[${getTimestamp()}] Agent: ${connection.agentId}, Project: ${projectIdentifier}`);
+      } else {
+        console.log(`[${getTimestamp()}] Model: ${connection.model || 'gpt-realtime'}`);
+      }
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -471,8 +486,12 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           console.log(`[${getTimestamp()}] Audio visualization stream created`);
         }
 
-        // Build session configuration using session builder
-        const sessionUpdate = buildSessionConfig(session);
+        // Configure session
+        // Agent Service: only send basic audio config (avatar/voice/instructions from portal)
+        // Standard mode: send full session config
+        const sessionUpdate = isAgentMode
+          ? buildAgentSessionConfig(session)
+          : buildSessionConfig(session);
 
         console.log(`[${getTimestamp()}] Configuring session...`);
         sendEvent({
@@ -489,8 +508,11 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         setConnectionState('error');
       };
 
-      ws.onclose = () => {
-        console.log(`[${getTimestamp()}] WebSocket closed`);
+      ws.onclose = (event) => {
+        console.log(`[${getTimestamp()}] WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason provided'}, Clean: ${event.wasClean}`);
+        if (!event.wasClean) {
+          console.error(`[${getTimestamp()}] WebSocket closed unexpectedly!`);
+        }
         setConnectionState('disconnected');
         setIsReady(false);
       };

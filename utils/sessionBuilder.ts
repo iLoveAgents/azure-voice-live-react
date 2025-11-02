@@ -71,6 +71,53 @@ export function buildSessionConfig(
 }
 
 /**
+ * Build minimal session configuration for Agent Service mode
+ * Only includes audio settings - avatar/voice/instructions come from portal
+ */
+export function buildAgentSessionConfig(
+  userConfig?: VoiceLiveSessionConfig
+): any {
+  // Start with basic audio configuration
+  const agentConfig: VoiceLiveSessionConfig = {
+    modalities: ['text', 'audio'],
+    inputAudioFormat: 'pcm16',
+    outputAudioFormat: 'pcm16',
+    inputAudioSamplingRate: 24000,
+    inputAudioEchoCancellation: {
+      type: 'server_echo_cancellation',
+    },
+    inputAudioNoiseReduction: {
+      type: 'azure_deep_noise_suppression',
+    },
+    turnDetection: {
+      type: 'azure_semantic_vad',
+      threshold: 0.5,
+      prefixPaddingMs: 300,
+      speechDurationMs: 80,
+      silenceDurationMs: 500,
+      removeFillerWords: false,
+      interruptResponse: true,
+      createResponse: true,
+    },
+  };
+
+  // Allow user to override audio settings if provided
+  if (userConfig) {
+    if (userConfig.modalities) agentConfig.modalities = userConfig.modalities;
+    if (userConfig.inputAudioFormat) agentConfig.inputAudioFormat = userConfig.inputAudioFormat;
+    if (userConfig.outputAudioFormat) agentConfig.outputAudioFormat = userConfig.outputAudioFormat;
+    if (userConfig.inputAudioSamplingRate) agentConfig.inputAudioSamplingRate = userConfig.inputAudioSamplingRate;
+    if (userConfig.inputAudioEchoCancellation !== undefined) agentConfig.inputAudioEchoCancellation = userConfig.inputAudioEchoCancellation;
+    if (userConfig.inputAudioNoiseReduction !== undefined) agentConfig.inputAudioNoiseReduction = userConfig.inputAudioNoiseReduction;
+    if (userConfig.turnDetection !== undefined) agentConfig.turnDetection = userConfig.turnDetection;
+    if (userConfig.inputAudioTranscription !== undefined) agentConfig.inputAudioTranscription = userConfig.inputAudioTranscription;
+  }
+
+  // Convert to session.update format
+  return convertToSessionUpdate(agentConfig);
+}
+
+/**
  * Convert typed config to session.update wire format
  * Handles snake_case conversion and structure transformation
  */

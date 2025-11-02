@@ -18,6 +18,12 @@ export function HomePage() {
         <li><Link to="/avatar-advanced">Avatar - Advanced</Link></li>
       </ul>
 
+      <h2 style={{ marginTop: '30px' }}>Agent Service</h2>
+      <ul>
+        <li><Link to="/agent-service">Agent Service - Direct (Browser limitation demo)</Link></li>
+        <li><Link to="/agent-service-proxy">Agent Service - Backend Proxy (Recommended)</Link></li>
+      </ul>
+
       <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>
       <ul>
         <li><Link to="/function-calling">Function Calling</Link></li>
