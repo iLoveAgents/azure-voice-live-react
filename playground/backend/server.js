@@ -24,7 +24,11 @@ if (!AZURE_AI_FOUNDRY_RESOURCE) {
 }
 
 /**
- * Build Azure WebSocket URL based on connection mode
+ * Build Azure WebSocket URL based on connection mode and authentication
+ *
+ * Supports multiple authentication methods:
+ * - Agent mode: MSAL token from browser (required)
+ * - Standard mode: MSAL token from browser OR API key from backend
  */
 function buildAzureUrl(query) {
   const base = `wss://${AZURE_AI_FOUNDRY_RESOURCE}.services.ai.azure.com/voice-live/realtime?api-version=${API_VERSION}`;
@@ -41,23 +45,35 @@ function buildAzureUrl(query) {
       throw new Error('Agent mode requires token parameter (MSAL)');
     }
 
+    console.log('[Proxy] Auth: MSAL token (Agent mode)');
     return {
       url: `${base}&agent-id=${agentId}&agent-project-name=${projectName}&agent-access-token=${encodeURIComponent(query.token)}`,
       headers: { 'Authorization': `Bearer ${query.token}` }
     };
   }
 
-  // Standard mode: Voice/Avatar with API key from backend
+  // Standard mode: Voice/Avatar
   const model = query.model || 'gpt-realtime';
 
-  if (!AZURE_SPEECH_KEY) {
-    throw new Error('Standard mode requires AZURE_SPEECH_KEY in .env');
+  // Option 1: Token-based auth (MSAL from browser) - Enterprise/User-level auth
+  if (query.token) {
+    console.log('[Proxy] Auth: MSAL token (user-level)');
+    return {
+      url: `${base}&model=${model}`,
+      headers: { 'Authorization': `Bearer ${query.token}` }
+    };
   }
 
-  return {
-    url: `${base}&model=${model}&api-key=${encodeURIComponent(AZURE_SPEECH_KEY)}`,
-    headers: {}
-  };
+  // Option 2: API key auth (from backend .env) - Shared key auth
+  if (AZURE_SPEECH_KEY) {
+    console.log('[Proxy] Auth: API key (shared)');
+    return {
+      url: `${base}&model=${model}&api-key=${encodeURIComponent(AZURE_SPEECH_KEY)}`,
+      headers: {}
+    };
+  }
+
+  throw new Error('Standard mode requires either token parameter (MSAL) or AZURE_SPEECH_KEY in .env');
 }
 
 /**
@@ -78,8 +94,9 @@ async function connectToAzure(query) {
  * Generic transparent proxy for all Azure Voice Live scenarios
  *
  * Usage:
- * - Voice/Avatar: ws://localhost:8080?mode=standard&model=gpt-realtime
- * - Agent: ws://localhost:8080?mode=agent&token=MSAL_TOKEN
+ * - Voice/Avatar with API key: ws://localhost:8080?mode=standard&model=gpt-realtime
+ * - Voice/Avatar with MSAL: ws://localhost:8080?mode=standard&model=gpt-realtime&token=MSAL_TOKEN
+ * - Agent with MSAL: ws://localhost:8080?mode=agent&token=MSAL_TOKEN
  */
 wss.on('connection', async (clientWs, req) => {
   console.log('\n[Proxy] Client connected:', req.url);

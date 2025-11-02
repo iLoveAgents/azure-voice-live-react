@@ -6,6 +6,7 @@ import { HomePage } from './pages/HomePage';
 import { VoiceOnlyBasic } from './pages/VoiceOnlyBasic';
 import { VoiceAdvanced } from './pages/VoiceAdvanced';
 import { VoiceProxy } from './pages/VoiceProxy';
+import { VoiceProxyMSAL } from './pages/VoiceProxyMSAL';
 import { AvatarBasic } from './pages/AvatarBasic';
 import { AvatarAdvanced } from './pages/AvatarAdvanced';
 import { AvatarProxy } from './pages/AvatarProxy';
@@ -51,6 +52,7 @@ function App() {
           <Route path="/voice-basic" element={<VoiceOnlyBasic />} />
           <Route path="/voice-advanced" element={<VoiceAdvanced />} />
           <Route path="/voice-proxy" element={<VoiceProxy />} />
+          <Route path="/voice-proxy-msal" element={<VoiceProxyMSAL />} />
           <Route path="/avatar-basic" element={<AvatarBasic />} />
           <Route path="/avatar-advanced" element={<AvatarAdvanced />} />
           <Route path="/avatar-proxy" element={<AvatarProxy />} />

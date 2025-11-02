@@ -10,7 +10,8 @@ export function HomePage() {
       <ul>
         <li><Link to="/voice-basic">Voice Chat - Simple</Link></li>
         <li><Link to="/voice-advanced">Voice Chat - Advanced Config</Link></li>
-        <li><Link to="/voice-proxy">Voice Chat - Secure Proxy</Link> <span style={{fontSize: '12px', color: '#666'}}>(recommended for production)</span></li>
+        <li><Link to="/voice-proxy">Voice Chat - Secure Proxy (API Key)</Link> <span style={{fontSize: '12px', color: '#666'}}>(good for demos)</span></li>
+        <li><Link to="/voice-proxy-msal">Voice Chat - Secure Proxy (MSAL)</Link> <span style={{fontSize: '12px', color: '#666'}}>(enterprise SSO, user-level auth)</span></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Avatar Examples</h2>
