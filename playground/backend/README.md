@@ -7,18 +7,18 @@
 ### ⚠️ Security Problem: API Keys in Browser
 
 **Never embed API keys in browser code:**
-- ❌ API keys in `.env` files get bundled into browser JavaScript
-- ❌ Anyone can inspect network tab and steal your keys
-- ❌ Keys can be extracted from source code
+- API keys in `.env` files get bundled into browser JavaScript
+- Anyone can inspect network tab and steal your keys
+- Keys can be extracted from source code
 
 **Four Authentication Options:**
 
 | Option | Security | Auditing | Use Case |
 |--------|----------|----------|----------|
-| **API keys in browser** | 🔴 Insecure | ❌ Anonymous | Quick demos only |
-| **Azure Static Web Apps + Easy Auth** | 🟡 Better | 🟡 Limited | SWA deployment |
-| **Backend Proxy + API Key** | 🟢 Good | ❌ Shared key | Production (shared access) |
-| **Backend Proxy + MSAL** | 🟢🟢 Best | ✅ Per-user | Enterprise (user-level auth) |
+| **API keys in browser** | Insecure | Anonymous | Quick demos only |
+| **Azure Static Web Apps + Easy Auth** | Better | Limited | SWA deployment |
+| **Backend Proxy + API Key** |  Good | Shared key | Production (shared access) |
+| **Backend Proxy + MSAL** |  Best | Per-user | Enterprise (user-level auth) |
 
 ## How the Proxy Works
 
@@ -54,7 +54,7 @@ npm start
 const config = createVoiceLiveConfig('default', {
   connection: {
     resourceName: 'my-resource',
-    apiKey: 'my-api-key', // ❌ Exposed in browser!
+    apiKey: 'my-api-key', // Exposed in browser!
   }
 });
 ```
@@ -64,7 +64,7 @@ const config = createVoiceLiveConfig('default', {
 const config = createVoiceLiveConfig('default', {
   connection: {
     customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime',
-    // ✅ No API key needed! Proxy adds it server-side.
+    // No API key needed! Proxy adds it server-side.
   }
 });
 ```
@@ -108,11 +108,11 @@ AZURE_AI_FOUNDRY_RESOURCE=your-resource
 **Use when:** Enterprise apps, need per-user auditing, SSO integration
 
 **Benefits:**
-- ✅ No API keys stored anywhere
-- ✅ Each user authenticated individually
-- ✅ Tokens auto-expire (1 hour)
-- ✅ Works with Conditional Access policies
-- ✅ Enterprise SSO support
+- No API keys stored anywhere
+- Each user authenticated individually
+- Tokens auto-expire (1 hour)
+- Works with Conditional Access policies
+- Enterprise SSO support
 
 **Setup required:**
 1. Azure App Registration with scope: `https://cognitiveservices.azure.com/.default`
@@ -190,24 +190,24 @@ location /voice-proxy {
 
 ⚠️ **The nginx example works ONLY for simple API key scenarios**. It does NOT support:
 
-- ❌ **MSAL token authentication** - Can't extract token from query params and add to headers
-- ❌ **Agent Service mode** - Can't build dynamic URLs with agent-id parameters
-- ❌ **Mixed auth modes** - Can't switch between API key and token auth
-- ❌ **Token validation** - Can't validate or refresh tokens
+- **MSAL token authentication** - Can't extract token from query params and add to headers
+- **Agent Service mode** - Can't build dynamic URLs with agent-id parameters
+- **Mixed auth modes** - Can't switch between API key and token auth
+- **Token validation** - Can't validate or refresh tokens
 
 **For these advanced scenarios, use the Node.js proxy (server.js)** which supports all authentication modes and dynamic routing.
 
 **When to use nginx:**
-- ✅ Simple demos with static API key
-- ✅ Single authentication method
-- ✅ No dynamic parameters needed
+- Simple demos with static API key
+- Single authentication method
+- No dynamic parameters needed
 
 **When to use Node.js proxy:**
-- ✅ MSAL token authentication (user-level auth)
-- ✅ Agent Service support
-- ✅ Multiple authentication modes
-- ✅ Token validation and refresh
-- ✅ Dynamic routing based on query params
+- MSAL token authentication (user-level auth)
+- Agent Service support
+- Multiple authentication modes
+- Token validation and refresh
+- Dynamic routing based on query params
 
 ## Security Best Practices
 
@@ -221,7 +221,7 @@ location /voice-proxy {
 
 See the playground for complete examples:
 - `/voice-proxy` - Voice chat with secure proxy (API key)
-- `/voice-proxy-msal` - Voice chat with secure proxy (MSAL token) 🆕
+- `/voice-proxy-msal` - Voice chat with secure proxy (MSAL token)
 - `/avatar-proxy` - Avatar with secure proxy (API key)
 - `/agent-service` - Agent Service with MSAL + proxy
 

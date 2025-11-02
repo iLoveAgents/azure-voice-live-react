@@ -38,7 +38,7 @@ pnpm add @iloveagents/azure-voice-live-react
 
 ## Security
 
-⚠️ **Important**: Never commit API keys to version control!
+**Important**: Never commit API keys to version control.
 
 **For Development:**
 
@@ -48,11 +48,12 @@ pnpm add @iloveagents/azure-voice-live-react
 
 **For Production:**
 
-- Implement backend proxy with Microsoft Entra ID authentication
+- **Recommended**: Use backend proxy with Microsoft Entra ID (MSAL) authentication
+- Library includes working proxy implementation ([playground/backend](./playground/backend))
 - Use managed identities for Azure-hosted applications
 - Never expose API keys in client-side code
 
-📖 **See [SECURITY.md](./SECURITY.md) for complete security best practices, authentication methods, and production deployment guidance.**
+**See [SECURITY.md](./SECURITY.md) and [playground/backend/README.md](./playground/backend/README.md) for complete security best practices, proxy setup, and production deployment guidance.**
 
 ## Quick Start
 

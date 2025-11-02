@@ -12,7 +12,22 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and enter your Azure credentials to test.
+Open <http://localhost:3000> and enter your Azure credentials to test.
+
+### Optional: Start Backend Proxy
+
+For testing secure proxy examples (Voice/Avatar/Agent with MSAL):
+
+```bash
+# In a separate terminal
+cd playground/backend
+npm install
+cp .env.example .env
+# Edit .env with your Azure credentials
+npm start
+```
+
+The proxy runs on `ws://localhost:8080` and enables testing of secure authentication patterns.
 
 ## Development Workflow
 
@@ -20,7 +35,7 @@ This project uses **npm workspaces** with a monorepo structure. The playground i
 
 ### Two Development Modes
 
-**Dev Mode (Fast Iteration)**
+#### Dev Mode (Fast Iteration)
 
 ```bash
 npm run dev
@@ -29,9 +44,9 @@ npm run dev
 - Uses source code directly via Vite alias (`../index.ts`)
 - Hot reload - changes reflect instantly
 - No build step needed
-- **Use this for daily development**
+- Use this for daily development
 
-**Dist Mode (Production Testing)**
+#### Dist Mode (Production Testing)
 
 ```bash
 npm run dev:dist
@@ -40,16 +55,16 @@ npm run dev:dist
 - Builds library to `dist/` then runs playground
 - Tests the actual package users will install
 - Catches build-only issues
-- **Use this before committing**
+- Use this before committing
 
 ### Development Loop
 
-1. **Make changes** to library code in project root
-2. **Test instantly** - Playground auto-reloads (dev mode)
-3. **Run tests** - `npm run test`
-4. **Check linting** - `npm run lint`
-5. **Test built output** - `npm run dev:dist`
-6. **Commit** changes
+1. Make changes to library code in project root
+2. Test instantly - Playground auto-reloads (dev mode)
+3. Run tests - `npm run test`
+4. Check linting - `npm run lint`
+5. Test built output - `npm run dev:dist`
+6. Commit changes
 
 ### Before Committing
 
@@ -83,7 +98,7 @@ azure-voice-live-react/
 ├── .prettierrc.json           # Prettier configuration
 │
 ├── types/                     # TypeScript definitions
-│   └── voice-live.types.ts   # Azure Voice Live API types
+│   └── voiceLive.ts          # Azure Voice Live API types
 │
 ├── hooks/                     # React hooks
 │   ├── useVoiceLive.ts       # Main hook
@@ -105,7 +120,13 @@ azure-voice-live-react/
 │
 └── playground/                # Development workspace (npm workspace)
     ├── vite.config.ts         # Configured with dev/dist modes
-    └── src/App.tsx            # Test UI
+    ├── src/                   # Playground examples
+    │   ├── App.tsx            # Router and MSAL setup
+    │   └── pages/             # Example implementations
+    └── backend/               # WebSocket proxy server
+        ├── server.js          # Generic proxy for all scenarios
+        ├── .env.example       # Configuration template
+        └── README.md          # Proxy documentation
 ```
 
 ## Common Tasks
@@ -169,6 +190,13 @@ npm run dev:dist  # Dist mode (built output)
 npm run build     # Build playground app
 ```
 
+From playground/backend directory:
+
+```bash
+npm install       # Install proxy dependencies
+npm start         # Start proxy server on port 8080
+```
+
 ## Coding Standards
 
 - **TypeScript strict mode** - No `any` types
@@ -176,6 +204,7 @@ npm run build     # Build playground app
 - **JSDoc comments** - All exported APIs
 - **No hacks** - Production-ready code only
 - **React hooks only** - No class components
+- **Minimal emoji usage** - Professional documentation
 
 ## Publishing
 
@@ -232,6 +261,7 @@ npm run test:watch   # Watch mode
 - **Main README**: [README.md](README.md) - Library usage documentation
 - **Agent Guide**: [AGENTS.md](AGENTS.md) - AI agent development guide
 - **Playground**: [playground/README.md](playground/README.md) - Playground documentation
+- **Backend Proxy**: [playground/backend/README.md](playground/backend/README.md) - Proxy documentation
 - **Azure Docs**: <https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-reference>
 
 ## Support
