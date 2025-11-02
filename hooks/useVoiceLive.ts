@@ -88,6 +88,8 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
   const wsRef = useRef<WebSocket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
 
   /**
    * Send an event to the Voice Live API
@@ -126,6 +128,52 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     },
     [session, sendEvent]
   );
+
+  /**
+   * Play audio chunk for voice-only mode
+   */
+  const playAudioChunk = useCallback((base64Audio: string) => {
+    try {
+      // Initialize AudioContext if needed
+      if (!audioContextRef.current) {
+        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      }
+
+      const audioContext = audioContextRef.current;
+
+      // Decode base64 to PCM16
+      const binaryString = atob(base64Audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Convert PCM16 to Float32 for Web Audio API
+      const pcm16 = new Int16Array(bytes.buffer);
+      const float32 = new Float32Array(pcm16.length);
+      for (let i = 0; i < pcm16.length; i++) {
+        const sample = pcm16[i];
+        if (sample !== undefined) {
+          float32[i] = sample / 32768.0; // Convert to -1.0 to 1.0 range
+        }
+      }
+
+      // Create AudioBuffer
+      const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+      audioBuffer.getChannelData(0).set(float32);
+
+      // Create and play source
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+
+      // Track for cleanup
+      audioQueueRef.current.push(source);
+    } catch (err) {
+      console.error('Error playing audio chunk:', err);
+    }
+  }, []);
 
   /**
    * Handle WebSocket messages
@@ -181,10 +229,10 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             newPc.ontrack = (event) => {
               if (event.track.kind === 'video') {
                 console.log(`[${getTimestamp()}] 🎥 Video stream connected`);
-                setVideoStream(event.streams[0]);
+                setVideoStream(event.streams[0] || null);
               } else if (event.track.kind === 'audio') {
                 console.log(`[${getTimestamp()}] 🔊 Audio stream connected`);
-                setAudioStream(event.streams[0]);
+                setAudioStream(event.streams[0] || null);
               }
             };
 
@@ -269,6 +317,13 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           console.log(`[${getTimestamp()}] 📝 User said: "${data.transcript}"`);
           break;
 
+        case 'response.audio.delta':
+          // Play audio for voice-only mode (no avatar)
+          if (data.delta && !videoStream) {
+            playAudioChunk(data.delta);
+          }
+          break;
+
         case 'response.audio_transcript.done':
           if (data.transcript) {
             console.log(`[${getTimestamp()}] 💬 Assistant: "${data.transcript}"`);
@@ -287,7 +342,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
       }
     },
-    [onEvent, sendEvent, toolExecutor]
+    [onEvent, sendEvent, toolExecutor, playAudioChunk, videoStream]
   );
 
   /**
