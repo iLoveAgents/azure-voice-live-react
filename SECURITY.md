@@ -43,7 +43,9 @@ const config = createVoiceLiveConfig('default', {
 - Least privilege access control
 
 **Why not directly supported in browser**:
-The browser's native WebSocket API does not support custom headers like `Authorization: Bearer <token>`. This is a browser security limitation, not a library limitation.
+According to [Microsoft documentation](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-how-to#authentication), token authentication requires the `Authorization: Bearer <token>` header. The browser's native WebSocket API (W3C specification) does not support setting custom headers like `Authorization`. This is a browser platform limitation, not a library limitation.
+
+**Note**: Unlike API keys (which support query string), Azure Voice Live API does not document token authentication via query string parameters.
 
 **Recommended Architecture for Production**:
 
