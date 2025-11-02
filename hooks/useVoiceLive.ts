@@ -108,7 +108,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         'response.create',
       ];
       if (!skipSendLogging.includes(event.type)) {
-        console.log(`[${getTimestamp()}] ⬆️ Sending:`, event.type);
+        console.log(`[${getTimestamp()}] Sending:`, event.type);
       }
       wsRef.current.send(JSON.stringify(event));
     } else {
@@ -152,7 +152,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     // Reset playback scheduling
     nextPlayTimeRef.current = 0;
 
-    console.log(`[${getTimestamp()}] 🛑 Audio playback stopped (user interruption)`);
+    console.log(`[${getTimestamp()}] Audio playback stopped (user interruption)`);
   }, []);
 
   /**
@@ -259,15 +259,15 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       // Handle specific events
       switch (data.type) {
         case 'session.created':
-          console.log(`[${getTimestamp()}] ✅ Session created`);
+          console.log(`[${getTimestamp()}] Session created`);
           break;
 
         case 'session.updated':
-          console.log(`[${getTimestamp()}] ✅ Session configured`);
+          console.log(`[${getTimestamp()}] Session configured`);
 
           // Set up WebRTC after session update
           if (data.session?.avatar?.ice_servers) {
-            console.log(`[${getTimestamp()}] 🎥 Setting up avatar WebRTC...`);
+            console.log(`[${getTimestamp()}] Setting up avatar WebRTC...`);
 
             const newConfig: RTCConfiguration = {
               iceServers: data.session.avatar.ice_servers,
@@ -278,10 +278,10 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             // Handle incoming tracks
             newPc.ontrack = (event) => {
               if (event.track.kind === 'video') {
-                console.log(`[${getTimestamp()}] 🎥 Video stream connected`);
+                console.log(`[${getTimestamp()}] Video stream connected`);
                 setVideoStream(event.streams[0] || null);
               } else if (event.track.kind === 'audio') {
-                console.log(`[${getTimestamp()}] 🔊 Audio stream connected`);
+                console.log(`[${getTimestamp()}] Audio stream connected`);
                 setAudioStream(event.streams[0] || null);
               }
             };
@@ -289,25 +289,25 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             // Log connection state changes
             newPc.oniceconnectionstatechange = () => {
               if (newPc.iceConnectionState === 'connected') {
-                console.log(`[${getTimestamp()}] ✅ ICE connected`);
+                console.log(`[${getTimestamp()}] ICE connected`);
               } else if (newPc.iceConnectionState === 'failed') {
-                console.log(`[${getTimestamp()}] ❌ ICE connection failed`);
+                console.log(`[${getTimestamp()}] ICE connection failed`);
                 setError('ICE connection failed');
               }
             };
 
             newPc.onconnectionstatechange = () => {
               if (newPc.connectionState === 'connected') {
-                console.log(`[${getTimestamp()}] ✅ WebRTC connected`);
+                console.log(`[${getTimestamp()}] WebRTC connected`);
               } else if (newPc.connectionState === 'failed') {
-                console.log(`[${getTimestamp()}] ❌ WebRTC connection failed`);
+                console.log(`[${getTimestamp()}] WebRTC connection failed`);
                 setError('WebRTC connection failed');
               }
             };
 
             newPc.onicecandidate = (event) => {
               if (!event.candidate) {
-                console.log(`[${getTimestamp()}] ✅ ICE gathering complete`);
+                console.log(`[${getTimestamp()}] ICE gathering complete`);
               }
             };
 
@@ -340,7 +340,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
                 type: 'session.avatar.connect',
                 client_sdp: encodedSdp,
               });
-              console.log(`[${getTimestamp()}] 🎥 Avatar connection request sent`);
+              console.log(`[${getTimestamp()}] Avatar connection request sent`);
             }
           }
           break;
@@ -350,7 +350,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             const decodedSdp = atob(data.server_sdp);
             const remoteDesc = JSON.parse(decodedSdp);
             await pcRef.current.setRemoteDescription(remoteDesc);
-            console.log(`[${getTimestamp()}] ✅ Avatar WebRTC established`);
+            console.log(`[${getTimestamp()}] Avatar WebRTC established`);
             setIsReady(true);
           }
           break;
@@ -366,7 +366,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
 
         case 'input_audio_buffer.speech_started':
-          console.log(`[${getTimestamp()}] 🎤 User speaking (interrupting)...`);
+          console.log(`[${getTimestamp()}] User speaking (interrupting)...`);
           // Microsoft's official pattern for WebSocket barge-in:
           // Stop client-side audio playback immediately
           // Server handles truncation with auto_truncate: true
@@ -374,11 +374,11 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
 
         case 'input_audio_buffer.speech_stopped':
-          console.log(`[${getTimestamp()}] 🎤 User stopped speaking`);
+          console.log(`[${getTimestamp()}] User stopped speaking`);
           break;
 
         case 'conversation.item.input_audio_transcription.completed':
-          console.log(`[${getTimestamp()}] 📝 User said: "${data.transcript}"`);
+          console.log(`[${getTimestamp()}] User said: "${data.transcript}"`);
           break;
 
         case 'response.audio.delta':
@@ -398,7 +398,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
         case 'response.audio_transcript.done':
           if (data.transcript) {
-            console.log(`[${getTimestamp()}] 💬 Assistant: "${data.transcript}"`);
+            console.log(`[${getTimestamp()}] Assistant: "${data.transcript}"`);
           }
           break;
 
@@ -409,7 +409,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           break;
 
         case 'error':
-          console.error(`[${getTimestamp()}] ❌ API Error:`, data.error);
+          console.error(`[${getTimestamp()}] API Error:`, data.error);
           setError(data.error?.message || 'Unknown API error');
           break;
       }
@@ -448,33 +448,33 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       }
       // Note: Token auth via Authorization header would need different WebSocket setup
 
-      console.log(`[${getTimestamp()}] 🔌 Connecting to Voice Live API...`);
-      console.log(`[${getTimestamp()}] 📦 Model: ${connection.model || 'gpt-realtime'}`);
+      console.log(`[${getTimestamp()}] Connecting to Voice Live API...`);
+      console.log(`[${getTimestamp()}] Model: ${connection.model || 'gpt-realtime'}`);
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log(`[${getTimestamp()}] ✅ WebSocket connected`);
+        console.log(`[${getTimestamp()}] WebSocket connected`);
         setConnectionState('connected');
 
         // Initialize AudioContext early on connection
         if (!audioContextRef.current) {
           audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-          console.log(`[${getTimestamp()}] 🔊 AudioContext created`);
+          console.log(`[${getTimestamp()}] AudioContext created`);
         }
 
         // Create MediaStreamDestination only for voice-only mode (not avatar)
         if (!audioStreamDestinationRef.current && !session?.avatar) {
           audioStreamDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
           setAudioStream(audioStreamDestinationRef.current.stream);
-          console.log(`[${getTimestamp()}] 📊 Audio visualization stream created`);
+          console.log(`[${getTimestamp()}] Audio visualization stream created`);
         }
 
         // Build session configuration using session builder
         const sessionUpdate = buildSessionConfig(session);
 
-        console.log(`[${getTimestamp()}] 🔧 Configuring session...`);
+        console.log(`[${getTimestamp()}] Configuring session...`);
         sendEvent({
           type: 'session.update',
           session: sessionUpdate,
@@ -484,19 +484,19 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       ws.onmessage = handleMessage;
 
       ws.onerror = (error) => {
-        console.error(`[${getTimestamp()}] ❌ WebSocket error:`, error);
+        console.error(`[${getTimestamp()}] WebSocket error:`, error);
         setError('WebSocket connection error');
         setConnectionState('error');
       };
 
       ws.onclose = () => {
-        console.log(`[${getTimestamp()}] 🔌 WebSocket closed`);
+        console.log(`[${getTimestamp()}] WebSocket closed`);
         setConnectionState('disconnected');
         setIsReady(false);
       };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect';
-      console.error(`[${getTimestamp()}] ❌ Connection error:`, err);
+      console.error(`[${getTimestamp()}] Connection error:`, err);
       setError(errorMessage);
       setConnectionState('error');
     }
@@ -511,7 +511,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
    * Disconnect from Voice Live API
    */
   const disconnect = useCallback(() => {
-    console.log(`[${getTimestamp()}] 🔌 Disconnecting...`);
+    console.log(`[${getTimestamp()}] Disconnecting...`);
 
     // Stop any playing audio
     audioQueueRef.current.forEach((source) => {

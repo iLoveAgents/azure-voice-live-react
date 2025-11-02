@@ -12,16 +12,16 @@ Azure Voice Live enables real-time voice conversations with AI models through na
 
 **Key Features:**
 
-- ✅ **Complete API Coverage** - All Azure Voice Live parameters supported and typed
-- ✅ **TypeScript First** - Comprehensive type definitions with full IntelliSense support
-- ✅ **Production Ready** - Enterprise-grade code with proper error handling and validation
-- ✅ **Optimized Presets** - 8 scenario-specific configurations for common use cases
-- ✅ **Fluent API** - 25+ composable helper functions for streamlined configuration
-- ✅ **React Hooks** - Modern hooks-based architecture (`useVoiceLive`, `useAudioCapture`)
-- ✅ **Avatar Support** - Real-time avatar video with GPU-accelerated chroma key compositing
-- ✅ **Audio Enhancements** - Built-in echo cancellation, noise suppression, and semantic VAD
-- ✅ **Function Calling** - Complete tool support with async executor pattern
-- ✅ **Zero Dependencies** - No external runtime dependencies (React only)
+- **Complete API Coverage** - All Azure Voice Live parameters supported and typed
+- **TypeScript First** - Comprehensive type definitions with full IntelliSense support
+- **Production Ready** - Enterprise-grade code with proper error handling and validation
+- **Optimized Presets** - 8 scenario-specific configurations for common use cases
+- **Fluent API** - 25+ composable helper functions for streamlined configuration
+- **React Hooks** - Modern hooks-based architecture (`useVoiceLive`, `useAudioCapture`)
+- **Avatar Support** - Real-time avatar video with GPU-accelerated chroma key compositing
+- **Audio Enhancements** - Built-in echo cancellation, noise suppression, and semantic VAD
+- **Function Calling** - Complete tool support with async executor pattern
+- **Zero Dependencies** - No external runtime dependencies (React only)
 
 ## Installation
 
@@ -721,4 +721,4 @@ See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ---
 
-**Made with ❤️ by [iloveagents](https://github.com/iloveagents)**
+**Built by [iloveagents](https://github.com/iloveagents)**
