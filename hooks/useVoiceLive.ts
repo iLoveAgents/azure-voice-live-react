@@ -458,12 +458,14 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         console.log(`[${getTimestamp()}] ✅ WebSocket connected`);
         setConnectionState('connected');
 
-        // Initialize AudioContext early for voice-only mode
+        // Initialize AudioContext early on connection
         if (!audioContextRef.current) {
           audioContextRef.current = new AudioContext({ sampleRate: 24000 });
           console.log(`[${getTimestamp()}] 🔊 AudioContext created`);
+        }
 
-          // Create MediaStreamDestination for audio visualization
+        // Create MediaStreamDestination only for voice-only mode (not avatar)
+        if (!audioStreamDestinationRef.current && !session?.avatar) {
           audioStreamDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
           setAudioStream(audioStreamDestinationRef.current.stream);
           console.log(`[${getTimestamp()}] 📊 Audio visualization stream created`);

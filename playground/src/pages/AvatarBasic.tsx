@@ -4,18 +4,25 @@ import { Link } from 'react-router-dom';
 
 export function AvatarBasic() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const config = createVoiceLiveConfig('default', {
     connection: {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
     },
-    session: withAvatar('lisa', 'casual-sitting', {}, {
+    session: withAvatar('lisa', 'casual-sitting', {
+      codec: 'h264',
+    }, {
       instructions: 'You are a helpful assistant. Keep responses brief.',
+      voice: {
+        name: 'en-US-Ava:DragonHDLatestNeural',
+        type: 'azure-standard',
+      },
     }),
   });
 
-  const { connect, disconnect, connectionState, sendEvent, videoStream } = useVoiceLive(config);
+  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
@@ -32,6 +39,13 @@ export function AvatarBasic() {
       videoRef.current.play().catch(console.error);
     }
   }, [videoStream]);
+
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [audioStream]);
 
   const handleStart = async () => {
     try {
@@ -76,6 +90,7 @@ export function AvatarBasic() {
             border: '1px solid #ddd',
           }}
         />
+        <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
       </div>
     </div>
   );

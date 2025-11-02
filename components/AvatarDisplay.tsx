@@ -110,6 +110,7 @@ export const AvatarDisplay: React.FC<AvatarDisplayProps> = ({
       video.autoplay = true;
 
       const handleLoadedMetadata = () => {
+        // Start chroma key processing
         if (enableChromaKey && canvas) {
           chromaKeyProcessorRef.current = createChromaKeyProcessor(
             video,

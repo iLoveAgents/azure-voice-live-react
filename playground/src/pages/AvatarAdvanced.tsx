@@ -12,12 +12,17 @@ export function AvatarAdvanced() {
       avatar: {
         character: 'lisa',
         style: 'casual-sitting',
+        video: {
+          codec: 'h264',
+          resolution: { width: 1920, height: 1080 },
+          bitrate: 2000000,
+        },
       },
       voice: {
         name: 'en-US-Ava:DragonHDLatestNeural',
         type: 'azure-standard',
         temperature: 0.9,
-        rate: '1.1',
+        rate: '0.95',
       },
       turnDetection: {
         type: 'azure_semantic_vad',
@@ -35,7 +40,7 @@ export function AvatarAdvanced() {
     }
   });
 
-  const { connect, disconnect, connectionState, sendEvent, videoStream } = useVoiceLive(config);
+  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
@@ -70,7 +75,7 @@ export function AvatarAdvanced() {
       <p>Status: {connectionState}</p>
 
       <div style={{ width: '800px', height: '450px', background: '#000', marginTop: '20px', borderRadius: '8px', overflow: 'hidden' }}>
-        {videoStream && <AvatarDisplay videoStream={videoStream} style={{ width: '100%', height: '100%' }} />}
+        {videoStream && <AvatarDisplay videoStream={videoStream} audioStream={audioStream} style={{ width: '100%', height: '100%' }} />}
       </div>
 
       <div style={{ marginTop: '20px' }}>
