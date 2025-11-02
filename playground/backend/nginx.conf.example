@@ -1,0 +1,30 @@
+# Nginx WebSocket Proxy for Azure Voice Live Agent Service
+# This is the simplest production-ready option
+
+# Add this to your nginx server block
+location /agent-service {
+    # Extract token from query parameter
+    set $token $arg_token;
+
+    # Azure Agent Service endpoint (update these values)
+    set $azure_resource "YOUR_RESOURCE_NAME.services.ai.azure.com";
+    set $agent_id "YOUR_AGENT_ID";
+    set $project_name "YOUR_PROJECT_NAME";
+    set $api_version "2025-10-01";
+
+    # Proxy to Azure with Authorization header
+    proxy_pass https://$azure_resource/voice-live/realtime?api-version=$api_version&agent-id=$agent_id&agent-project-name=$project_name&agent-access-token=$token;
+
+    # Add Authorization header (browsers cannot do this)
+    proxy_set_header Authorization "Bearer $token";
+
+    # WebSocket headers
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $azure_resource;
+
+    # Timeouts
+    proxy_read_timeout 3600s;
+    proxy_send_timeout 3600s;
+}

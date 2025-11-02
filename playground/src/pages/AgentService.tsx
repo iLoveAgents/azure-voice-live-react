@@ -1,75 +1,22 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { useVoiceLive, useAudioCapture, AvatarDisplay } from '@iloveagents/azure-voice-live-react';
+import { useAudioCapture } from '@iloveagents/azure-voice-live-react';
 
-export default function AgentService(): JSX.Element {
+export default function AgentServiceProxy(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
+  const nextPlayTimeRef = useRef<number>(0);
+  const wsRef = useRef<WebSocket | null>(null);
   const { instance, accounts } = useMsal();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  const [sessionReady, setSessionReady] = useState(false);
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
-  const resourceName = import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE;
-  const agentId = import.meta.env.VITE_AGENT_ID;
-  const projectName = import.meta.env.VITE_PROJECT_NAME;
-
-  // Validate all required environment variables
-  if (!resourceName || !agentId || !projectName) {
-    return (
-      <div style={{ padding: '2rem', fontFamily: 'system-ui' }}>
-        <h1>Agent Service</h1>
-        <div style={{ background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px', padding: '1rem', marginTop: '1rem' }}>
-          <strong>Configuration Required</strong>
-          <p>Please set all required environment variables in your .env file:</p>
-          <ul>
-            <li>VITE_AZURE_AI_FOUNDRY_RESOURCE=your-resource-name</li>
-            <li>VITE_AGENT_ID=your-agent-id</li>
-            <li>VITE_PROJECT_NAME=your-project-name</li>
-            <li>VITE_AZURE_CLIENT_ID=your-azure-app-client-id</li>
-            <li>VITE_AZURE_TENANT_ID=your-azure-tenant-id</li>
-          </ul>
-          <p style={{ marginTop: '1rem' }}>
-            <strong>Note:</strong> Agent Service requires user authentication via MSAL.
-            You need to register an Azure AD application and configure the client ID and tenant ID.
-          </p>
-          <p style={{ marginTop: '0.5rem', fontSize: '0.9em' }}>
-            See .env.example for setup instructions.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Agent Service configuration with MSAL token
-  // Note: API key is NOT supported in Agent mode - only agent-access-token
-  const config = accessToken ? {
-    connection: {
-      resourceName,
-      agentId,
-      projectName,
-      agentAccessToken: accessToken,
-    },
-  } : null;
-
-  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config || {
-    connection: { resourceName, agentId, projectName, agentAccessToken: '' }
-  });
-
-  const { startCapture, stopCapture, isCapturing } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
-    }, [sendEvent]),
-  });
-
-  useEffect(() => {
-    if (audioRef.current && audioStream) {
-      audioRef.current.srcObject = audioStream;
-      audioRef.current.play().catch(console.error);
-    }
-  }, [audioStream]);
+  const backendProxyUrl = import.meta.env.VITE_BACKEND_PROXY_URL || 'ws://localhost:8080';
 
   // Acquire access token for Agent Service
   const acquireToken = async () => {
@@ -124,22 +71,211 @@ export default function AgentService(): JSX.Element {
     }
   }, [accounts]);
 
-  const handleStart = async (): Promise<void> => {
+  // Connect to backend proxy
+  const connect = useCallback(async () => {
     if (!accessToken) {
-      await acquireToken();
+      setAuthError('Please sign in first');
       return;
     }
 
-    console.log('Starting Agent Service connection...');
     try {
+      setConnectionState('connecting');
+      console.log('Connecting to backend proxy...');
+
+      // Connect to backend with token as query parameter
+      const ws = new WebSocket(`${backendProxyUrl}?token=${encodeURIComponent(accessToken)}`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('Connected to backend proxy');
+        setConnectionState('connected');
+
+        // Initialize AudioContext
+        if (!audioContextRef.current) {
+          audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+          const destination = audioContextRef.current.createMediaStreamDestination();
+          setAudioStream(destination.stream);
+        }
+      };
+
+      ws.onmessage = async (event) => {
+        try {
+          // Handle both text and blob messages
+          let data: string;
+          if (event.data instanceof Blob) {
+            data = await event.data.text();
+          } else {
+            data = event.data;
+          }
+
+          const message = JSON.parse(data);
+          console.log('Received from Azure:', message.type);
+
+          // Handle audio delta
+          if (message.type === 'response.audio.delta' && message.delta) {
+            const audioData = Uint8Array.from(atob(message.delta), c => c.charCodeAt(0));
+            playAudio(audioData);
+          }
+
+          // Handle session created - send configuration
+          if (message.type === 'session.created') {
+            console.log('Session created, configuring...');
+            ws.send(JSON.stringify({
+              type: 'session.update',
+              session: {
+                modalities: ['text', 'audio'],
+                input_audio_format: 'pcm16',
+                output_audio_format: 'pcm16',
+                input_audio_transcription: { model: 'whisper-1' },
+                turn_detection: {
+                  type: 'server_vad',
+                  threshold: 0.5,
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 500
+                }
+              }
+            }));
+          }
+
+          // Handle session updated - now ready to send audio
+          if (message.type === 'session.updated') {
+            console.log('Session configured and ready!');
+            setSessionReady(true);
+          }
+
+          // Handle other message types as needed
+          if (message.type === 'error') {
+            console.error('Azure error:', message.error);
+            setAuthError(message.error.message);
+          }
+        } catch (error) {
+          console.error('Error parsing message:', error);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setConnectionState('disconnected');
+        setAuthError('Connection error');
+      };
+
+      ws.onclose = (event) => {
+        console.log(`WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}`);
+        setConnectionState('disconnected');
+      };
+
+    } catch (error) {
+      console.error('Connection error:', error);
+      setConnectionState('disconnected');
+      setAuthError(error instanceof Error ? error.message : String(error));
+    }
+  }, [accessToken, backendProxyUrl]);
+
+  // Disconnect
+  const disconnect = useCallback(() => {
+    // Stop all playing audio
+    audioQueueRef.current.forEach((source) => {
+      try {
+        source.stop();
+      } catch (e) {
+        // Ignore if already stopped
+      }
+    });
+    audioQueueRef.current = [];
+    nextPlayTimeRef.current = 0;
+
+    // Close WebSocket
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    setConnectionState('disconnected');
+    setSessionReady(false);
+  }, []);
+
+  // Play audio with queuing to prevent overlaps
+  const playAudio = useCallback((audioData: Uint8Array) => {
+    if (!audioContextRef.current) return;
+
+    const audioContext = audioContextRef.current;
+    const int16Array = new Int16Array(audioData.buffer);
+    const float32Array = new Float32Array(int16Array.length);
+
+    for (let i = 0; i < int16Array.length; i++) {
+      float32Array[i] = int16Array[i] / 32768.0;
+    }
+
+    const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
+    audioBuffer.getChannelData(0).set(float32Array);
+
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+
+    // Queue audio to play sequentially
+    const currentTime = audioContext.currentTime;
+    const startTime = Math.max(currentTime, nextPlayTimeRef.current);
+
+    source.start(startTime);
+    nextPlayTimeRef.current = startTime + audioBuffer.duration;
+
+    // Clean up when done
+    source.onended = () => {
+      const index = audioQueueRef.current.indexOf(source);
+      if (index > -1) {
+        audioQueueRef.current.splice(index, 1);
+      }
+    };
+
+    audioQueueRef.current.push(source);
+  }, []);
+
+  // Send audio data to backend proxy
+  const sendAudioData = useCallback((audioData: ArrayBuffer) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && sessionReady) {
+      const uint8Array = new Uint8Array(audioData);
+      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
+      wsRef.current.send(JSON.stringify({
+        type: 'input_audio_buffer.append',
+        audio: base64Audio
+      }));
+    }
+  }, [sessionReady]);
+
+  const { startCapture, stopCapture, isCapturing } = useAudioCapture({
+    sampleRate: 24000,
+    onAudioData: useCallback((audioData: ArrayBuffer) => {
+      sendAudioData(audioData);
+    }, [sendAudioData]),
+  });
+
+  // Setup audio element
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [audioStream]);
+
+  const handleStart = async (): Promise<void> => {
+    try {
+      console.log('Starting Agent Service connection via proxy...');
       await connect();
-      console.log('Connected to Agent Service');
-      await startCapture();
-      console.log('Mic started');
+      // Audio capture will start automatically when session is ready
     } catch (err) {
       console.error('Start error:', err);
     }
   };
+
+  // Start audio capture when session is ready
+  useEffect(() => {
+    if (sessionReady && connectionState === 'connected' && !isCapturing) {
+      startCapture().then(() => {
+        console.log('Mic started after session ready');
+      });
+    }
+  }, [sessionReady, connectionState, isCapturing, startCapture]);
 
   const handleStop = async (): Promise<void> => {
     await stopCapture();
@@ -153,7 +289,7 @@ export default function AgentService(): JSX.Element {
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'system-ui', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>Agent Service with MSAL Authentication</h1>
+      <h1>Agent Service with Backend Proxy</h1>
 
       {/* Authentication Status */}
       <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
@@ -166,65 +302,62 @@ export default function AgentService(): JSX.Element {
         ) : (
           <>
             <p>Signed in as: <strong>{accounts[0].username}</strong></p>
-            <p>Access token: {accessToken ? '✓ Acquired' : '✗ Not acquired'}</p>
+            <p>Access token: {accessToken ? '✓ Acquired' : '✗ Not available'}</p>
             <button onClick={handleSignOut}>Sign Out</button>
           </>
         )}
         {authError && (
-          <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#ffebee', borderRadius: '4px', color: '#c62828' }}>
+          <div style={{ marginTop: '1rem', padding: '0.5rem', background: '#ffebee', color: '#c62828', borderRadius: '4px' }}>
             {authError}
           </div>
         )}
       </div>
 
-      {/* Voice Live Controls */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-        <button onClick={handleStart} disabled={connectionState !== 'disconnected' || !accessToken}>
+      {/* Controls */}
+      <div style={{ marginBottom: '2rem' }}>
+        <button
+          onClick={handleStart}
+          disabled={connectionState === 'connected' || !accessToken}
+          style={{ marginRight: '1rem' }}
+        >
           Start
         </button>
-        <button onClick={handleStop} disabled={connectionState === 'disconnected'}>
+        <button
+          onClick={handleStop}
+          disabled={connectionState === 'disconnected'}
+        >
           Stop
         </button>
-        <div>
-          <div style={{
-            width: '10px',
-            height: '10px',
-            borderRadius: '50%',
-            display: 'inline-block',
-            marginRight: '0.5rem',
-            background: connectionState === 'connected' ? '#4caf50' : connectionState === 'connecting' ? '#ff9800' : '#9e9e9e'
-          }} />
+        <div style={{ marginTop: '0.5rem' }}>
           {connectionState} {isCapturing && '(mic)'}
         </div>
       </div>
 
-      {/* Avatar Display */}
-      {videoStream && (
-        <div style={{ width: '100%', maxWidth: '800px', margin: '0 auto' }}>
-          <AvatarDisplay
-            videoStream={videoStream}
-            audioStream={audioStream}
-            style={{ width: '100%', borderRadius: '8px' }}
-          />
+      {/* Architecture Diagram */}
+      <div style={{ marginBottom: '2rem', padding: '1rem', background: '#e3f2fd', borderRadius: '4px' }}>
+        <h3 style={{ marginTop: 0 }}>Architecture</h3>
+        <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
+          Browser (MSAL) → Backend Proxy (Node.js) → Azure Voice Live Agent Service
+          <br />
+          <span style={{ opacity: 0.7 }}>Token acquired via MSAL, sent to proxy, proxy adds Authorization header</span>
         </div>
-      )}
-
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
+      </div>
 
       {/* Setup Instructions */}
-      <div style={{ marginTop: '3rem', padding: '1rem', background: '#e3f2fd', borderRadius: '4px' }}>
+      <div style={{ padding: '1rem', background: '#fff3cd', borderRadius: '4px' }}>
         <h3 style={{ marginTop: 0 }}>Setup Instructions</h3>
         <ol>
-          <li>Register an Azure AD application in Azure Portal</li>
-          <li>Configure redirect URI: <code>http://localhost:3001</code></li>
-          <li>Grant API permissions: <code>https://ai.azure.com/.default</code></li>
-          <li>Copy Client ID and Tenant ID to your .env file</li>
-          <li>Wrap your app with MsalProvider (see App.tsx)</li>
+          <li>Start the backend proxy server: <code>cd playground/backend && npm install && npm start</code></li>
+          <li>Configure Azure AD app (already done)</li>
+          <li>Sign in and click "Start"</li>
         </ol>
-        <p style={{ marginTop: '1rem', fontSize: '0.9em' }}>
-          <strong>Documentation:</strong> See <a href="https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-agents-quickstart" target="_blank" rel="noopener noreferrer">Voice Live Agent Service Quickstart</a>
+        <p style={{ marginTop: '1rem' }}>
+          <strong>Backend URL:</strong> {backendProxyUrl}
         </p>
       </div>
+
+      {/* Hidden audio element */}
+      <audio ref={audioRef} style={{ display: 'none' }} />
     </div>
   );
 }

@@ -1,151 +1,83 @@
 # Agent Service Backend Proxy
 
-This is a Node.js WebSocket proxy server that enables browser-based applications to connect to Azure Voice Live Agent Service.
+Transparent WebSocket proxy that enables browser connections to Azure Voice Live Agent Service.
 
 ## Why is this needed?
 
-Browser WebSocket API has a fundamental limitation: **it cannot set custom HTTP headers** (like `Authorization`) during the WebSocket handshake. The Azure Voice Live Agent Service requires the `Authorization: Bearer <token>` header for authentication, which makes direct browser connections impossible.
-
-### Architecture
+Browsers cannot set the `Authorization` header during WebSocket handshake, but Azure requires it. This proxy adds the header server-side.
 
 ```
-Browser (MSAL) → Backend Proxy → Azure Voice Live Agent Service
-     ↓               ↓                        ↓
-  Token via    Adds Auth Header      Requires Auth Header
-  Query Param   (Node.js can do)      (Browser cannot do)
+Browser (MSAL) → Proxy → Azure Agent Service
+     Token       Adds Auth       Requires Auth
 ```
 
-## Setup
+## Proxy Options
 
-### 1. Install Dependencies
+### Option 1: Node.js (Development)
+
+**Setup:**
 
 ```bash
-cd playground/backend
 npm install
-```
-
-### 2. Configure Environment
-
-Copy `.env.example` to `.env` and fill in your values:
-
-```bash
 cp .env.example .env
-```
-
-Edit `.env`:
-
-```bash
-PORT=8080
-AZURE_AI_FOUNDRY_RESOURCE=your-resource-name
-AGENT_ID=your-agent-id
-PROJECT_NAME=your-project-name
-API_VERSION=2025-10-01
-```
-
-### 3. Start the Server
-
-```bash
+# Edit .env with your Azure configuration
 npm start
 ```
 
-For development with auto-reload:
-
+**Configuration (.env):**
 ```bash
-npm run dev
+PORT=8080
+AZURE_AI_FOUNDRY_RESOURCE=your-resource
+AGENT_ID=your-agent-id
+PROJECT_NAME=your-project
+API_VERSION=2025-10-01
 ```
 
-## How It Works
-
-1. **Browser Authentication**: The browser uses MSAL to obtain an Azure AD token with scope `https://ai.azure.com/.default`
-
-2. **WebSocket Connection**: The browser connects to the proxy with the token as a query parameter:
-   ```
-   ws://localhost:8080?token=<azure-ad-token>
-   ```
-
-3. **Proxy → Azure**: The Node.js proxy:
-   - Extracts the token from the query parameter
-   - Creates a WebSocket connection to Azure Voice Live Agent Service
-   - Adds the `Authorization: Bearer <token>` header (which browsers can't do)
-   - Adds the `agent-access-token` query parameter
-
-4. **Message Proxying**: The proxy bidirectionally forwards all WebSocket messages between the browser and Azure
-
-## API
-
-### WebSocket Endpoint
-
-**URL**: `ws://localhost:8080`
-
-**Query Parameters**:
-- `token` (required): Azure AD bearer token from MSAL
-
-**Example**:
+**Usage:**
 ```javascript
-const token = await msalInstance.acquireTokenSilent({
-  scopes: ['https://ai.azure.com/.default']
-});
-
-const ws = new WebSocket(`ws://localhost:8080?token=${encodeURIComponent(token.accessToken)}`);
+const ws = new WebSocket(`ws://localhost:8080?token=${token}`);
 ```
 
-### Health Check
+### Option 2: Nginx (Production)
 
-**URL**: `http://localhost:8080/health`
+**Configuration (nginx.conf):**
+```nginx
+location /agent-service {
+    set $token $arg_token;
+    set $azure_resource "your-resource.services.ai.azure.com";
 
-**Response**:
-```json
-{
-  "status": "ok",
-  "service": "Agent Service Proxy",
-  "config": {
-    "resource": "your-resource-name",
-    "agentId": "your-agent-id",
-    "projectName": "your-project-name"
-  }
+    proxy_pass https://$azure_resource/voice-live/realtime?...;
+    proxy_set_header Authorization "Bearer $token";
+
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
 }
 ```
 
-## Security Considerations
+See [nginx.conf.example](./nginx.conf.example) for complete configuration.
 
-- **Token in URL**: The token is passed as a query parameter, which is encrypted by WSS (WebSocket Secure). This is equivalent to HTTPS encryption.
-- **Backend Only**: This proxy should run on a backend server, not exposed directly to the internet without proper security measures.
-- **Token Validation**: The proxy trusts the token from the browser. In production, you should add additional validation.
-- **CORS**: Configure CORS appropriately for your production environment.
+## How it works
 
-## Production Deployment
+1. Browser gets Azure AD token via MSAL
+2. Browser connects to proxy with token in query parameter
+3. Proxy adds `Authorization: Bearer <token>` header (browsers can't)
+4. Proxy forwards all messages transparently
 
-For production, consider:
+## Security
 
-1. **HTTPS**: Use WSS (secure WebSocket) with SSL certificates
-2. **Authentication**: Add your own authentication layer before accepting browser connections
-3. **Rate Limiting**: Implement rate limiting per user/IP
-4. **Monitoring**: Add logging and monitoring for connection events
-5. **Error Handling**: Implement robust error handling and retry logic
+- Token transmitted over WSS (encrypted like HTTPS)
+- Add authentication/rate limiting for production
+- Use WSS (secure WebSocket) in production
+- Validate tokens server-side for sensitive applications
 
 ## Troubleshooting
 
-### "Missing bearer token" error
+**Connection fails:**
+- Verify token is valid and has `https://ai.azure.com/.default` scope
+- Check Azure configuration in .env
+- Ensure "Cognitive Services User" role assigned in Azure
 
-Make sure you're passing the token in the URL:
-```javascript
-ws://localhost:8080?token=YOUR_TOKEN
-```
-
-### "Failed to connect to Azure" error
-
-Check that:
-- Your Azure credentials are valid
-- The agent ID and project name are correct
-- You have the "Cognitive Services User" role in Azure
-
-### Connection timeout
-
-The proxy waits 10 seconds for Azure to respond. If this times out:
-- Check your network connection
-- Verify Azure service is available
-- Check Azure portal for service health
-
-## License
-
-Same as parent project
+**Messages not working:**
+- Azure expects text messages (JSON), not binary
+- Proxy automatically converts buffers to UTF-8 text
