@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   useVoiceLive,
   useAudioCapture,
@@ -60,8 +60,19 @@ function App() {
     fullConfig: config,
   });
 
-  const { videoStream, connect, disconnect, connectionState, sendEvent } =
+  const { videoStream, audioStream, connect, disconnect, connectionState, sendEvent } =
     useVoiceLive(config);
+
+  // Audio output element
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Play audio stream when available
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch((err) => console.log('Audio play error:', err));
+    }
+  }, [audioStream]);
 
   // Audio capture hook
   const { startCapture, stopCapture } = useAudioCapture({
@@ -280,6 +291,9 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Hidden audio element for playback */}
+      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
 
       <div style={{
         padding: '15px',
