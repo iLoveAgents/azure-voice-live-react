@@ -36,6 +36,24 @@ yarn add @iloveagents/azure-voice-live-react
 pnpm add @iloveagents/azure-voice-live-react
 ```
 
+## Security
+
+⚠️ **Important**: Never commit API keys to version control!
+
+**For Development:**
+
+- Use environment variables (`.env` files)
+- Add `.env` to `.gitignore`
+- Example: `apiKey: process.env.VITE_AZURE_SPEECH_KEY`
+
+**For Production:**
+
+- Implement backend proxy with Microsoft Entra ID authentication
+- Use managed identities for Azure-hosted applications
+- Never expose API keys in client-side code
+
+📖 **See [SECURITY.md](./SECURITY.md) for complete security best practices, authentication methods, and production deployment guidance.**
+
 ## Quick Start
 
 ### Basic Implementation
