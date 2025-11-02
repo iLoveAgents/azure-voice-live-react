@@ -68,9 +68,13 @@ function App() {
 
   // Play audio stream when available
   useEffect(() => {
+    console.log('🔊 Audio stream changed:', audioStream);
     if (audioRef.current && audioStream) {
+      console.log('🔊 Setting audio srcObject and playing...');
       audioRef.current.srcObject = audioStream;
-      audioRef.current.play().catch((err) => console.log('Audio play error:', err));
+      audioRef.current.play().catch((err) => console.log('❌ Audio play error:', err));
+    } else if (audioRef.current) {
+      console.log('⚠️ audioRef exists but no audioStream');
     }
   }, [audioStream]);
 
