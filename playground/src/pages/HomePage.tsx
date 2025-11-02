@@ -15,7 +15,7 @@ export function HomePage() {
       <h2 style={{ marginTop: '30px' }}>Avatar Examples</h2>
       <ul>
         <li><Link to="/avatar-basic">Avatar - Simple</Link></li>
-        <li><Link to="/avatar-advanced">Avatar - Advanced Config</Link></li>
+        <li><Link to="/avatar-advanced">Avatar - Advanced</Link></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>

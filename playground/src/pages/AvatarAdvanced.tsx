@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useVoiceLive, useAudioCapture, AvatarDisplay, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, useAudioCapture, AvatarDisplay, createVoiceLiveConfig, withGreenScreen } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function AvatarAdvanced() {
@@ -8,7 +8,7 @@ export function AvatarAdvanced() {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
     },
-    session: {
+    session: withGreenScreen('#00FF00FF', {
       avatar: {
         character: 'lisa',
         style: 'casual-sitting',
@@ -37,7 +37,7 @@ export function AvatarAdvanced() {
       inputAudioEchoCancellation: {
         type: 'server_echo_cancellation',
       },
-    }
+    })
   });
 
   const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
@@ -71,11 +71,21 @@ export function AvatarAdvanced() {
   return (
     <div>
       <Link to="/">← Back</Link>
-      <h1>Avatar - Advanced Config</h1>
+      <h1>Avatar - Advanced</h1>
       <p>Status: {connectionState}</p>
+      <p style={{ fontSize: '14px', color: '#666' }}>
+        With background removal, semantic VAD, and noise suppression.
+      </p>
 
-      <div style={{ width: '800px', height: '450px', background: '#000', marginTop: '20px', borderRadius: '8px', overflow: 'hidden' }}>
-        {videoStream && <AvatarDisplay videoStream={videoStream} audioStream={audioStream} style={{ width: '100%', height: '100%' }} />}
+      <div style={{
+        width: '800px',
+        height: '450px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        marginTop: '20px',
+        borderRadius: '8px',
+        overflow: 'hidden'
+      }}>
+        {videoStream && <AvatarDisplay videoStream={videoStream} audioStream={audioStream} enableChromaKey style={{ width: '100%', height: '100%' }} />}
       </div>
 
       <div style={{ marginTop: '20px' }}>
