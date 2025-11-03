@@ -32,7 +32,7 @@ export function VoiceProxyMSAL() {
         account: accounts[0],
       });
       setAccessToken(response.accessToken);
-      setWsUrl(`ws://localhost:8080?mode=standard&model=gpt-realtime&token=${encodeURIComponent(response.accessToken)}`);
+      setWsUrl(`ws://localhost:8080/ws?mode=standard&model=gpt-realtime&token=${encodeURIComponent(response.accessToken)}`);
       console.log('Access token acquired successfully');
     } catch (error) {
       if (error instanceof InteractionRequiredAuthError) {
@@ -42,7 +42,7 @@ export function VoiceProxyMSAL() {
             account: accounts[0],
           });
           setAccessToken(response.accessToken);
-          setWsUrl(`ws://localhost:8080?mode=standard&model=gpt-realtime&token=${encodeURIComponent(response.accessToken)}`);
+          setWsUrl(`ws://localhost:8080/ws?mode=standard&model=gpt-realtime&token=${encodeURIComponent(response.accessToken)}`);
           console.log('Access token acquired via popup');
         } catch (popupError) {
           console.error('Token acquisition failed:', popupError);
@@ -63,7 +63,7 @@ export function VoiceProxyMSAL() {
 
   const config = createVoiceLiveConfig('default', {
     connection: {
-      customWebSocketUrl: wsUrl || undefined,
+      proxyUrl: wsUrl || undefined,
     },
     session: {
       instructions: 'You are a helpful assistant. Keep responses brief.',

@@ -63,13 +63,13 @@ const config = createVoiceLiveConfig('default', {
 ```typescript
 const config = createVoiceLiveConfig('default', {
   connection: {
-    customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime',
+    proxyUrl: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime',
     // No API key needed! Proxy adds it server-side.
   }
 });
 ```
 
-That's it! Just change the endpoint.
+That's it! Just use `proxyUrl` instead of direct connection.
 
 ## All Supported Scenarios
 
@@ -77,7 +77,7 @@ That's it! Just change the endpoint.
 
 **Frontend:**
 ```typescript
-customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime'
+proxyUrl: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime'
 ```
 
 **Backend (.env):**
@@ -96,7 +96,7 @@ const token = await msalInstance.acquireTokenSilent({
   scopes: ['https://cognitiveservices.azure.com/.default']
 });
 
-customWebSocketUrl: `ws://localhost:8080?mode=standard&model=gpt-realtime&token=${token.accessToken}`
+proxyUrl: `ws://localhost:8080/ws?mode=standard&model=gpt-realtime&token=${token.accessToken}`
 ```
 
 **Backend (.env):**
@@ -127,7 +127,7 @@ const token = await msalInstance.acquireTokenSilent({
   scopes: ['https://ai.azure.com/.default']
 });
 
-customWebSocketUrl: `ws://localhost:8080?mode=agent&token=${token.accessToken}`
+proxyUrl: `ws://localhost:8080/ws?mode=agent&token=${token.accessToken}`
 ```
 
 **Backend (.env):**

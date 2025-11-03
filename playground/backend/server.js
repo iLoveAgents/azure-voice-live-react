@@ -6,7 +6,7 @@ import { parse } from 'url';
 dotenv.config();
 
 const server = createServer();
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, path: '/ws' });
 
 // Configuration - API key secured in backend (not exposed to browser)
 const PORT = process.env.PORT || 8080;
@@ -94,9 +94,9 @@ async function connectToAzure(query) {
  * Generic transparent proxy for all Azure Voice Live scenarios
  *
  * Usage:
- * - Voice/Avatar with API key: ws://localhost:8080?mode=standard&model=gpt-realtime
- * - Voice/Avatar with MSAL: ws://localhost:8080?mode=standard&model=gpt-realtime&token=MSAL_TOKEN
- * - Agent with MSAL: ws://localhost:8080?mode=agent&token=MSAL_TOKEN
+ * - Voice/Avatar with API key: ws://localhost:8080/ws?mode=standard&model=gpt-realtime
+ * - Voice/Avatar with MSAL: ws://localhost:8080/ws?mode=standard&model=gpt-realtime&token=MSAL_TOKEN
+ * - Agent with MSAL: ws://localhost:8080/ws?mode=agent&token=MSAL_TOKEN
  */
 wss.on('connection', async (clientWs, req) => {
   console.log('\n[Proxy] Client connected:', req.url);

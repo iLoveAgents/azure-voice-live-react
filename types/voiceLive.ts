@@ -91,11 +91,17 @@ export interface VoiceLiveConnectionConfig {
   // ===== Proxy Mode =====
 
   /**
-   * Custom WebSocket URL to connect to (e.g., for backend proxy)
+   * Proxy WebSocket URL (for secure backend proxy)
    * When set, overrides all other connection parameters
-   * Example: 'ws://localhost:8080?mode=standard&model=gpt-realtime'
+   *
+   * Supports @iloveagents/azure-voice-live-proxy or custom proxy servers.
+   *
+   * Standard format: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime'
+   * With MSAL: 'ws://localhost:8080/ws?mode=agent&token=${msalToken}'
+   *
+   * @see {@link https://github.com/iLoveAgents/azure-voice-live-proxy}
    */
-  customWebSocketUrl?: string;
+  proxyUrl?: string;
 }
 
 // ============================================================================

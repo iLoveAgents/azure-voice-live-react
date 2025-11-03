@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 export function AvatarProxy() {
   const config = createVoiceLiveConfig('avatar', {
     connection: {
-      // Proxy mode: just change the endpoint! API key secured in backend.
-      customWebSocketUrl: 'ws://localhost:8080?mode=standard&model=gpt-realtime',
+      // Proxy mode: API key secured in backend
+      proxyUrl: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime',
     },
     session: {
       voice: {

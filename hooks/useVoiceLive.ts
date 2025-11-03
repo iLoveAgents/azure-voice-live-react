@@ -444,9 +444,9 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       let wsUrl: string;
       let isAgentMode = false;
 
-      // Proxy mode: use custom WebSocket URL if provided
-      if (connection.customWebSocketUrl) {
-        wsUrl = connection.customWebSocketUrl;
+      // Proxy mode: use proxy URL if provided
+      if (connection.proxyUrl) {
+        wsUrl = connection.proxyUrl;
         // Detect agent mode from URL parameters
         isAgentMode = wsUrl.includes('mode=agent');
         isAgentModeRef.current = isAgentMode;
