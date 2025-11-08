@@ -108,6 +108,10 @@ export interface AudioCaptureConfig {
   workletPath?: string;
   /** Audio constraints for getUserMedia */
   audioConstraints?: MediaTrackConstraints;
+  /** Callback for receiving processed audio data */
+  onAudioData?: AudioDataCallback;
+  /** Whether to automatically start capture */
+  autoStart?: boolean;
 }
 
 // ==================== Hook Return Types ====================

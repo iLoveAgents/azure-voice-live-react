@@ -28,6 +28,11 @@ export {
 } from './utils/sessionBuilder';
 
 export {
+  arrayBufferToBase64,
+  createAudioDataCallback,
+} from './utils/audioHelpers';
+
+export {
   // Voice helpers
   withVoice,
   withHDVoice,

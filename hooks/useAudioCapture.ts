@@ -21,14 +21,7 @@
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import type { AudioCaptureConfig, AudioCaptureReturn, AudioDataCallback } from '../types';
-
-interface UseAudioCaptureProps extends AudioCaptureConfig {
-  /** Callback for receiving processed audio data */
-  onAudioData?: AudioDataCallback;
-  /** Whether to automatically start capture */
-  autoStart?: boolean;
-}
+import type { AudioCaptureConfig, AudioCaptureReturn } from '../types';
 
 /**
  * Inline AudioWorklet processor code
@@ -81,7 +74,7 @@ export function useAudioCapture({
   audioConstraints,
   onAudioData,
   autoStart = false,
-}: UseAudioCaptureProps = {}): AudioCaptureReturn {
+}: AudioCaptureConfig = {}): AudioCaptureReturn {
   const [isCapturing, setIsCapturing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
