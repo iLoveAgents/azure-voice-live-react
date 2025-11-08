@@ -56,7 +56,7 @@ import { buildSessionConfig, buildAgentSessionConfig } from '../utils/sessionBui
 /**
  * Utility to get timestamp for logging
  */
-const getTimestamp = () => {
+const getTimestamp = (): string => {
   const now = new Date();
   return `${now.getHours().toString().padStart(2, '0')}:${now
     .getMinutes()
@@ -100,6 +100,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   /**
    * Send an event to the Voice Live API
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sendEvent = useCallback((event: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       // Skip logging for verbose events
@@ -232,6 +233,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
    */
   const handleMessage = useCallback(
     async (event: MessageEvent) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data: any = JSON.parse(event.data);
 
       // Skip verbose event logging
@@ -262,25 +264,27 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
       // Handle specific events
       switch (data.type) {
-        case 'session.created':
+        case 'session.created': {
           console.log(`[${getTimestamp()}] Session created`);
 
-          // NOW send session.update after receiving session.created
-          const sessionUpdate = isAgentModeRef.current
+          // Send session.update immediately after session.created
+          // Don't start audio capture until session is configured
+          const sessionConfig = isAgentModeRef.current
             ? buildAgentSessionConfig(session)
             : buildSessionConfig(session);
 
           console.log(`[${getTimestamp()}] Configuring session...`);
           sendEvent({
             type: 'session.update',
-            session: sessionUpdate,
+            session: sessionConfig,
           });
           break;
+        }
 
         case 'session.updated':
           console.log(`[${getTimestamp()}] Session configured`);
 
-          // Set up WebRTC after session update
+          // Set up WebRTC after session update (avatar mode)
           if (data.session?.avatar?.ice_servers) {
             console.log(`[${getTimestamp()}] Setting up avatar WebRTC...`);
 
@@ -357,6 +361,10 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
               });
               console.log(`[${getTimestamp()}] Avatar connection request sent`);
             }
+          } else {
+            // Voice-only mode (no avatar) - session is ready immediately
+            console.log(`[${getTimestamp()}] Voice-only session ready`);
+            setIsReady(true);
           }
           break;
 

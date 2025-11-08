@@ -2,7 +2,14 @@ import { useCallback, useRef, useEffect } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
-export function VoiceOnlyBasic() {
+/**
+ * VoiceOnlyBasic - Simple voice chat example
+ * 
+ * Demonstrates basic voice-only conversation with Azure Voice Live API.
+ * Audio capture automatically starts when the session is ready.
+ */
+export function VoiceOnlyBasic(): JSX.Element {
+  // Create Voice Live configuration with default preset
   const config = createVoiceLiveConfig('default', {
     connection: {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
@@ -10,19 +17,25 @@ export function VoiceOnlyBasic() {
     }
   });
 
-  const { connect, disconnect, connectionState, sendEvent, audioStream } = useVoiceLive(config);
+  // Voice Live hook for managing WebSocket connection and audio streaming
+  const { connect, disconnect, connectionState, sendEvent, audioStream, isReady } = useVoiceLive(config);
 
+  // Audio capture hook for microphone input (24kHz PCM16)
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
     onAudioData: useCallback((audioData: ArrayBuffer) => {
+      // Convert audio buffer to base64 and send to Voice Live API
       const uint8Array = new Uint8Array(audioData);
       const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
       sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
     }, [sendEvent]),
   });
 
+  // Refs for audio playback and capture state management
   const audioRef = useRef<HTMLAudioElement>(null);
+  const captureStartedRef = useRef(false);
 
+  // Set up audio playback when stream becomes available
   useEffect(() => {
     if (audioRef.current && audioStream) {
       audioRef.current.srcObject = audioStream;
@@ -30,19 +43,34 @@ export function VoiceOnlyBasic() {
     }
   }, [audioStream]);
 
-  const handleStart = async () => {
+  /**
+   * Automatically start audio capture when session is ready.
+   * This ensures audio is only sent after session configuration is complete.
+   */
+  useEffect(() => {
+    if (isReady && !captureStartedRef.current) {
+      captureStartedRef.current = true;
+      startCapture()
+        .then(() => {
+          console.log('Mic started (session ready)');
+        })
+        .catch(console.error);
+    }
+  }, [isReady, startCapture]);
+
+  const handleStart = async (): Promise<void> => {
     console.log('Starting...');
     try {
       await connect();
-      console.log('Connected');
-      await startCapture();
-      console.log('Mic started');
+      console.log('Connected - waiting for session to be ready...');
+      // Audio capture will start automatically when isReady becomes true
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
+  const handleStop = async (): Promise<void> => {
+    captureStartedRef.current = false;
     await stopCapture();
     disconnect();
   };
@@ -58,7 +86,8 @@ export function VoiceOnlyBasic() {
         <button onClick={handleStart} disabled={isConnected}>Start</button>
         <button onClick={handleStop} disabled={!isConnected}>Stop</button>
       </div>
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
+      {/* Hidden audio element for playing assistant responses */}
+      <audio ref={audioRef} autoPlay hidden />
     </div>
   );
 }

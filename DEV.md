@@ -89,44 +89,14 @@ npm run dev:dist
 
 ```txt
 azure-voice-live-react/
-├── index.ts                    # Main library exports
-├── package.json                # npm package configuration (with workspaces)
-├── tsconfig.json              # TypeScript strict mode config
-├── tsup.config.ts             # Build config (ESM + CJS)
-├── vitest.config.ts           # Test configuration
-├── .eslintrc.json             # ESLint configuration
-├── .prettierrc.json           # Prettier configuration
-│
-├── types/                     # TypeScript definitions
-│   └── voiceLive.ts          # Azure Voice Live API types
-│
-├── hooks/                     # React hooks
-│   ├── useVoiceLive.ts       # Main hook
-│   └── useAudioCapture.ts    # Audio capture
-│
-├── components/                # React components
-│   └── VoiceLiveAvatar.tsx     # Avatar display
-│
-├── services/                  # Core services
-│   ├── websocket.service.ts  # WebSocket management
-│   └── webrtc.service.ts     # WebRTC handling
-│
-├── utils/                     # Utilities
-│   ├── sessionBuilder.ts     # Fluent builder
-│   ├── presets.ts            # Scenario presets
-│   ├── configHelpers.ts      # Configuration helpers
-│   ├── configHelpers.test.ts # Tests
-│   └── audioUtils.ts         # Audio utilities
-│
-└── playground/                # Development workspace (npm workspace)
-    ├── vite.config.ts         # Configured with dev/dist modes
-    ├── src/                   # Playground examples
-    │   ├── App.tsx            # Router and MSAL setup
-    │   └── pages/             # Example implementations
-    └── backend/               # WebSocket proxy server
-        ├── server.js          # Generic proxy for all scenarios
-        ├── .env.example       # Configuration template
-        └── README.md          # Proxy documentation
+├── index.ts              # Library exports
+├── hooks/                # React hooks (useVoiceLive, useAudioCapture)
+├── components/           # React components (VoiceLiveAvatar)
+├── utils/                # Utilities (sessionBuilder, presets, helpers)
+├── types/                # TypeScript type definitions
+└── playground/           # Development workspace
+    ├── src/pages/        # Example implementations
+    └── backend/          # WebSocket proxy (optional)
 ```
 
 ## Common Tasks

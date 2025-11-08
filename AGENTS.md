@@ -2,9 +2,12 @@
 
 AI agent guidance for developing the Azure Voice Live React library.
 
-## Project Purpose
+## Project Overview
 
-Professional React library for Azure AI Foundry Voice Live API. TypeScript strict mode, zero hacks, production-ready code.
+Professional React library for Azure AI Foundry Voice Live API integration. Provides hooks and components for real-time voice/avatar conversations with OpenAI's real-time API.
+
+**Tech Stack:** React 18, TypeScript 5.9 (strict mode), Vite, tsup, Vitest
+**Target:** Production-ready code with zero hacks or workarounds
 
 ## Quick Start
 
@@ -19,17 +22,24 @@ npm run dev
 cd playground/backend && npm install && npm start
 ```
 
-## Development Workflow
-
-### Primary Commands
+## Build and Test Commands
 
 ```bash
+# Setup
+npm install          # Install all dependencies (library + playground workspace)
+
+# Development
 npm run dev          # Start playground in dev mode (hot reload)
-npm run dev:dist     # Test built package (before publishing)
-npm run build        # Build library
-npm run test         # Run tests
-npm run lint         # Check code quality
-npm run format       # Format code
+npm run dev:dist     # Test built package (validates production build)
+
+# Quality checks
+npm run build        # Build library (creates dist/)
+npm run test         # Run Vitest tests
+npm run lint         # ESLint validation
+npm run format       # Prettier formatting
+
+# Before committing - run all checks
+npm run build && npm run test && npm run lint && npm run dev:dist
 ```
 
 ### Two Development Modes
@@ -70,72 +80,88 @@ npm start
 
 The proxy runs on `ws://localhost:8080` and secures API keys server-side.
 
-### Before Committing
-
-```bash
-npm run build        # Verify build works
-npm run test         # Run tests
-npm run lint         # Check code quality
-npm run dev:dist     # Test built output
-```
-
 ## Project Structure
 
 ```txt
 azure-voice-live-react/
-├── index.ts              # Library exports (edit this when adding features)
-├── types/                # TypeScript definitions
+├── index.ts              # Library exports
 ├── hooks/                # React hooks (useVoiceLive, useAudioCapture)
 ├── components/           # React components (VoiceLiveAvatar)
-├── services/             # WebSocket, WebRTC services
-├── utils/                # Builders, presets, helpers
-└── playground/           # Development workspace (npm workspace)
-    ├── vite.config.ts    # Configured with dev/dist modes
-    ├── src/              # Playground examples
-    │   ├── App.tsx       # Router and MSAL setup
-    │   └── pages/        # Example implementations
-    └── backend/          # WebSocket proxy server
-        ├── server.js     # Generic proxy for all scenarios
-        ├── .env.example  # Configuration template
-        └── README.md     # Proxy documentation
+├── utils/                # Utilities (sessionBuilder, presets, helpers)
+├── types/                # TypeScript type definitions
+└── playground/           # Development workspace
+    ├── src/pages/        # Example implementations
+    └── backend/          # WebSocket proxy (optional)
 ```
+
+## Testing Instructions
+
+- All tests use **Vitest** with TypeScript support
+- Run `npm run test` from root to execute all tests
+- Test files follow `*.test.ts` pattern (e.g., `configHelpers.test.ts`)
+- Add tests for any new utility functions or builders
+- Test coverage expected for all exported utilities
+
+### Manual Testing in Playground
+
+1. Start dev mode: `npm run dev`
+2. Navigate to relevant example page in browser (<http://localhost:5173>)
+3. Test with actual Azure Voice Live API connection
+4. For proxy examples, start backend: `cd playground/backend && npm start`
 
 ## Common Tasks
 
-### Add New Feature
+### Adding New Features
 
-1. Create/edit files in project root
-2. Export from `index.ts`
-3. Test in playground
-4. Update README.md
-5. Run `npm run build` to verify
+1. Create/edit files in project root (hooks/, components/, utils/, types/)
+2. Export from `index.ts` (required for package users)
+3. Add TypeScript types in `types/voiceLive.ts` if needed
+4. Test in playground (create example page if needed)
+5. Update README.md with usage examples
+6. Run `npm run build` and `npm run dev:dist` to verify
 
-### Fix Bug
+### Fixing Bugs
 
-1. Reproduce in playground
-2. Fix in library code
-3. Verify fix in playground
-4. Commit changes
+1. Reproduce issue in playground first
+2. Add test case if applicable (`*.test.ts`)
+3. Fix in library code (never in playground)
+4. Verify fix in playground and tests
+5. Run all quality checks before committing
 
-### Add Configuration Option
+### Modifying Configuration/API
 
 1. Update types in `types/voiceLive.ts`
-2. Update builder/preset/helper as needed
-3. Test in playground [App.tsx](playground/src/App.tsx)
-4. Document in README.md
+2. Update `utils/sessionBuilder.ts` for wire format conversion
+3. Update `presets/index.ts` if needed for common scenarios
+4. Test in playground examples (especially VoiceOnlyBasic.tsx)
+5. Document changes in README.md
 
-## Coding Standards
+## Code Style Guidelines
 
-- TypeScript strict mode (no `any`)
-- Explicit return types on functions
-- Comprehensive JSDoc on exports
-- No hacks or workarounds
-- Production-ready code only
+- **TypeScript:** Strict mode enabled, no `any` unless intentional (wire format conversions)
+- **Functions:** Explicit return types required
+- **Documentation:** JSDoc comments on all exported functions/types
+- **Quality:** Production-ready code only, no hacks or workarounds
+- **Formatting:** Prettier (2 spaces, single quotes, semicolons)
+- **Linting:** ESLint with strict rules, must pass before commit
 
-## Publishing
+## Security Considerations
+
+- **API Keys:** Never commit Azure API keys or secrets
+- **Backend Proxy:** Use `playground/backend` for production scenarios
+- **MSAL Authentication:** Examples in `playground/src/pages/*ProxyMSAL.tsx`
+- **.env Files:** Always in `.gitignore`, use `.env.example` templates
+
+## Publishing Workflow
 
 ```bash
-npm run build
+# Pre-publish checklist
+npm run build        # Ensure clean build
+npm run test         # All tests pass
+npm run lint         # No linting errors
+npm run dev:dist     # Validate built package works
+
+# Publish (maintainers only)
 npm publish --access public
 ```
 
