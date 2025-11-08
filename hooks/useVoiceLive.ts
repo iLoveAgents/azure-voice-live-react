@@ -97,11 +97,21 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const isFirstChunkRef = useRef<boolean>(true);
   const isAgentModeRef = useRef<boolean>(false);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eventQueueRef = useRef<any[]>([]);
+
   /**
-   * Send an event to the Voice Live API
+   * Send an event to the Voice Live API.
+   * Audio events are automatically queued until session is ready.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sendEvent = useCallback((event: any) => {
+    // Queue audio buffer events until session is ready
+    if (event.type === 'input_audio_buffer.append' && !isReady) {
+      eventQueueRef.current.push(event);
+      return;
+    }
+
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       // Skip logging for verbose events
       const skipSendLogging = [
@@ -116,7 +126,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     } else {
       console.warn('WebSocket not connected, cannot send event:', event.type);
     }
-  }, []);
+  }, [isReady]);
 
   /**
    * Update session configuration
@@ -365,6 +375,17 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             // Voice-only mode (no avatar) - session is ready immediately
             console.log(`[${getTimestamp()}] Voice-only session ready`);
             setIsReady(true);
+            
+            // Flush queued audio events
+            if (eventQueueRef.current.length > 0) {
+              console.log(`[${getTimestamp()}] Flushing ${eventQueueRef.current.length} queued audio events`);
+              eventQueueRef.current.forEach((event) => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                  wsRef.current.send(JSON.stringify(event));
+                }
+              });
+              eventQueueRef.current = [];
+            }
           }
           break;
 
@@ -375,6 +396,17 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
             await pcRef.current.setRemoteDescription(remoteDesc);
             console.log(`[${getTimestamp()}] Avatar WebRTC established`);
             setIsReady(true);
+            
+            // Flush queued audio events
+            if (eventQueueRef.current.length > 0) {
+              console.log(`[${getTimestamp()}] Flushing ${eventQueueRef.current.length} queued audio events`);
+              eventQueueRef.current.forEach((event) => {
+                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                  wsRef.current.send(JSON.stringify(event));
+                }
+              });
+              eventQueueRef.current = [];
+            }
           }
           break;
 
@@ -549,10 +581,10 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       setError(errorMessage);
       setConnectionState('error');
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     connection,
     session,
-    sendEvent,
     handleMessage,
   ]);
 

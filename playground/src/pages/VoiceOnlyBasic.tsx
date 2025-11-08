@@ -18,7 +18,7 @@ export function VoiceOnlyBasic(): JSX.Element {
   });
 
   // Voice Live hook for managing WebSocket connection and audio streaming
-  const { connect, disconnect, connectionState, sendEvent, audioStream, isReady } = useVoiceLive(config);
+  const { connect, disconnect, connectionState, sendEvent, audioStream } = useVoiceLive(config);
 
   // Audio capture hook for microphone input (24kHz PCM16)
   const { startCapture, stopCapture } = useAudioCapture({
@@ -31,9 +31,8 @@ export function VoiceOnlyBasic(): JSX.Element {
     }, [sendEvent]),
   });
 
-  // Refs for audio playback and capture state management
+  // Ref for audio playback
   const audioRef = useRef<HTMLAudioElement>(null);
-  const captureStartedRef = useRef(false);
 
   // Set up audio playback when stream becomes available
   useEffect(() => {
@@ -43,34 +42,16 @@ export function VoiceOnlyBasic(): JSX.Element {
     }
   }, [audioStream]);
 
-  /**
-   * Automatically start audio capture when session is ready.
-   * This ensures audio is only sent after session configuration is complete.
-   */
-  useEffect(() => {
-    if (isReady && !captureStartedRef.current) {
-      captureStartedRef.current = true;
-      startCapture()
-        .then(() => {
-          console.log('Mic started (session ready)');
-        })
-        .catch(console.error);
-    }
-  }, [isReady, startCapture]);
-
   const handleStart = async (): Promise<void> => {
-    console.log('Starting...');
     try {
       await connect();
-      console.log('Connected - waiting for session to be ready...');
-      // Audio capture will start automatically when isReady becomes true
+      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
   const handleStop = async (): Promise<void> => {
-    captureStartedRef.current = false;
     await stopCapture();
     disconnect();
   };

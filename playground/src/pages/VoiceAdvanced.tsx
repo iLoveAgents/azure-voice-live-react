@@ -2,7 +2,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
-export function VoiceAdvanced() {
+export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Advanced configuration with all major options
@@ -64,7 +64,7 @@ export function VoiceAdvanced() {
     }
   }, [audioStream]);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     try {
       await connect();
       await startCapture();
@@ -73,7 +73,7 @@ export function VoiceAdvanced() {
     }
   };
 
-  const handleStop = async () => {
+  const handleStop = async (): Promise<void> => {
     await stopCapture();
     disconnect();
   };
@@ -86,7 +86,7 @@ export function VoiceAdvanced() {
       <h1>Voice Chat - Advanced Config</h1>
       <p>Status: {connectionState}</p>
 
-      <div style={{ marginTop: '20px' }}>
+      <div className="button-group">
         <button onClick={handleStart} disabled={isConnected}>
           Start
         </button>
@@ -95,9 +95,9 @@ export function VoiceAdvanced() {
         </button>
       </div>
 
-      <div style={{ marginTop: '30px', padding: '20px', background: '#f5f5f5', borderRadius: '8px' }}>
+      <div className="config-panel">
         <h3>Configuration</h3>
-        <ul style={{ marginLeft: '20px', fontSize: '14px', lineHeight: '1.8' }}>
+        <ul className="config-list">
           <li><strong>Voice:</strong> HD Voice (en-US-Ava:DragonHDLatestNeural) with temperature 0.9, rate 1.1x</li>
           <li><strong>Turn Detection:</strong> Azure Semantic VAD with filler word removal</li>
           <li><strong>Barge-in:</strong> Enabled with auto-truncate</li>
@@ -106,7 +106,7 @@ export function VoiceAdvanced() {
         </ul>
       </div>
 
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
+      <audio ref={audioRef} autoPlay hidden />
     </div>
   );
 }
