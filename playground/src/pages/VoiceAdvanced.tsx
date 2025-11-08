@@ -1,12 +1,12 @@
-import { useCallback, useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { useRef, useEffect } from 'react';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Advanced configuration with all major options
-  const config = createVoiceLiveConfig('default', {
+  const config = createVoiceLiveConfig({
     connection: {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
@@ -50,11 +50,7 @@ export function VoiceAdvanced(): JSX.Element {
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
-    }, [sendEvent]),
+    onAudioData: createAudioDataCallback(sendEvent),
   });
 
   useEffect(() => {

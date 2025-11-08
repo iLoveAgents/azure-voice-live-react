@@ -51,7 +51,7 @@ npm start
 
 **Before (insecure):**
 ```typescript
-const config = createVoiceLiveConfig('default', {
+const config = createVoiceLiveConfig({
   connection: {
     resourceName: 'my-resource',
     apiKey: 'my-api-key', // Exposed in browser!
@@ -61,7 +61,7 @@ const config = createVoiceLiveConfig('default', {
 
 **After (secure):**
 ```typescript
-const config = createVoiceLiveConfig('default', {
+const config = createVoiceLiveConfig({
   connection: {
     proxyUrl: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime',
     // No API key needed! Proxy adds it server-side.

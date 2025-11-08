@@ -1,5 +1,5 @@
-import { useCallback, useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { useRef, useEffect } from 'react';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 /**
@@ -9,8 +9,8 @@ import { Link } from 'react-router-dom';
  * Audio capture automatically starts when the session is ready.
  */
 export function VoiceOnlyBasic(): JSX.Element {
-  // Create Voice Live configuration with default preset
-  const config = createVoiceLiveConfig('default', {
+  // Create Voice Live configuration
+  const config = createVoiceLiveConfig({
     connection: {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
@@ -23,12 +23,7 @@ export function VoiceOnlyBasic(): JSX.Element {
   // Audio capture hook for microphone input (24kHz PCM16)
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      // Convert audio buffer to base64 and send to Voice Live API
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
-    }, [sendEvent]),
+    onAudioData: createAudioDataCallback(sendEvent),
   });
 
   // Ref for audio playback

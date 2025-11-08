@@ -1,5 +1,5 @@
-import { useCallback, useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { useRef, useEffect, useState } from 'react';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
@@ -62,7 +62,7 @@ export function AvatarProxyMSAL() {
     }
   }, [accounts]);
 
-  const config = createVoiceLiveConfig('avatar', {
+  const config = createVoiceLiveConfig({
     connection: {
       proxyUrl: wsUrl || undefined,
     },
@@ -83,11 +83,7 @@ export function AvatarProxyMSAL() {
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
-    }, [sendEvent]),
+    onAudioData: createAudioDataCallback(sendEvent),
   });
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { useAudioCapture } from '@iloveagents/azure-voice-live-react';
+import { useAudioCapture , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
 
 export default function AgentServiceProxy(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);

@@ -8,14 +8,13 @@ A comprehensive, production-ready React library for Azure Voice Live API with co
 
 ## Overview
 
-Azure Voice Live enables real-time voice conversations with AI models through native audio streaming. This library provides a complete React implementation with full API coverage, optimized presets, and a fluent configuration API.
+Azure Voice Live enables real-time voice conversations with AI models through native audio streaming. This library provides a complete React implementation with full API coverage and a fluent configuration API.
 
 **Key Features:**
 
 - **Complete API Coverage** - All Azure Voice Live parameters supported and typed
 - **TypeScript First** - Comprehensive type definitions with full IntelliSense support
 - **Production Ready** - Enterprise-grade code with proper error handling and validation
-- **Optimized Presets** - 8 scenario-specific configurations for common use cases
 - **Fluent API** - 25+ composable helper functions for streamlined configuration
 - **React Hooks** - Modern hooks-based architecture (`useVoiceLive`, `useAudioCapture`)
 - **Avatar Support** - Real-time avatar video with GPU-accelerated chroma key compositing
@@ -103,56 +102,34 @@ function VoiceAssistant() {
 │   └── VoiceLiveAvatar         - Avatar video with chroma key support
 ├── Configuration
 │   ├── Session Builder       - Type-safe configuration builder
-│   ├── Presets              - 8 optimized scenario configurations
+│   ├── createVoiceLiveConfig - Simple configuration helper
 │   └── Helpers              - 25+ fluent configuration functions
 └── Types
     └── Complete TypeScript definitions for Azure Voice Live API
 ```
 
-## Configuration Presets
+## Configuration API
 
-Pre-configured settings optimized for specific use cases:
+### Simple Configuration Builder
 
-### Available Presets
-
-| Preset | Use Case | Key Optimizations |
-|--------|----------|-------------------|
-| **DEFAULT_PRESET** | General purpose applications | `gpt-realtime`, Azure Semantic VAD, 24kHz audio, best quality |
-| **CALL_CENTER_PRESET** | Customer service & support | Deep noise suppression, filler word removal, barge-in enabled |
-| **AUTOMOTIVE_PRESET** | In-vehicle voice assistants | Far-field noise reduction, patient turn detection, no interruptions |
-| **EDUCATION_PRESET** | Teaching & tutoring | Extended silence tolerance, patient listening, no interruptions |
-| **GAMING_PRESET** | Interactive gaming | Low latency, fast turn detection, immediate responses |
-| **ACCESSIBILITY_PRESET** | Accessibility applications | Clear articulation, slower speech rate, very patient listening |
-| **MULTILINGUAL_PRESET** | Multi-language support | Multilingual semantic VAD, 10+ language support |
-| **HIGH_PERFORMANCE_PRESET** | Cost optimization | `gpt-realtime-mini`, 16kHz audio, lighter processing |
-
-### Using Presets
+Use `createVoiceLiveConfig` to build your configuration:
 
 ```tsx
-import { useVoiceLive, createCallCenterConfig } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 
-const config = createCallCenterConfig({
+const config = createVoiceLiveConfig({
   connection: {
     resourceName: 'your-resource-name',
     apiKey: process.env.AZURE_VOICE_LIVE_KEY,
   },
   session: {
-    instructions: 'You are a professional customer service representative.',
+    instructions: 'You are a helpful assistant.',
+    voice: 'en-US-Ava:DragonHDLatestNeural',
   },
 });
 
 const { videoStream, connect } = useVoiceLive(config);
 ```
-
-**Quick Preset Functions:**
-- `createCallCenterConfig()` - Customer service optimization
-- `createAutomotiveConfig()` - In-vehicle assistant optimization
-- `createEducationConfig()` - Educational application optimization
-- `createGamingConfig()` - Gaming interaction optimization
-- `createAccessibilityConfig()` - Accessibility optimization
-- `createMultilingualConfig()` - Multi-language optimization
-
-## Configuration API
 
 ### Fluent Helper Functions
 
@@ -203,7 +180,7 @@ const { videoStream, connect } = useVoiceLive({
 
 **Avatar Configuration:**
 - `withAvatar(character, style, options, config)` - Configure avatar character and style
-- `withGreenScreen(color, config)` - Add chroma key background
+- `withTransparentBackground(config, options?)` - Enable transparent background with chroma key (default green, customizable)
 - `withBackgroundImage(url, config)` - Add custom background image
 - `withAvatarCrop(crop, config)` - Configure video cropping for portrait mode
 
@@ -317,16 +294,81 @@ interface VoiceLiveAvatarProps {
 
 Hook for capturing microphone audio with AudioWorklet processing.
 
+**Parameters:**
+
+```typescript
+interface AudioCaptureConfig {
+  sampleRate?: number;                  // Sample rate (default: 24000)
+  workletPath?: string;                 // Custom AudioWorklet path (optional)
+  audioConstraints?: MediaTrackConstraints; // getUserMedia constraints
+  onAudioData?: (data: ArrayBuffer) => void; // Audio data callback
+  autoStart?: boolean;                  // Auto-start capture (default: false)
+}
+```
+
 **Returns:**
 
 ```typescript
-interface UseAudioCaptureReturn {
+interface AudioCaptureReturn {
   isCapturing: boolean;                 // Capture state
   startCapture: () => Promise<void>;    // Start capturing
   stopCapture: () => void;              // Stop capturing
-  onAudioData: (callback: (data: ArrayBuffer) => void) => void; // Audio data callback
+  pauseCapture: () => void;             // Pause capture
+  resumeCapture: () => void;            // Resume capture
 }
 ```
+
+**Example:**
+
+```typescript
+import { useAudioCapture, createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+
+const { sendEvent } = useVoiceLive(config);
+const { startCapture, stopCapture } = useAudioCapture({
+  sampleRate: 24000,
+  onAudioData: createAudioDataCallback(sendEvent),
+});
+```
+
+### Audio Helper Utilities
+
+Convenience helpers for audio processing.
+
+#### `createAudioDataCallback()`
+
+Creates a callback function for `useAudioCapture` that automatically converts audio to base64 and sends it via Voice Live API.
+
+**Usage:**
+
+```typescript
+import { createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+
+const { sendEvent } = useVoiceLive(config);
+const { startCapture } = useAudioCapture({
+  sampleRate: 24000,
+  onAudioData: createAudioDataCallback(sendEvent),
+});
+```
+
+**Benefits:**
+- Automatic safe base64 conversion (prevents stack overflow with large audio buffers)
+- Reduces boilerplate from 5+ lines to 1 line
+- Handles all edge cases internally
+
+#### `arrayBufferToBase64()`
+
+Low-level utility for converting ArrayBuffer to base64 string safely.
+
+**Usage:**
+
+```typescript
+import { arrayBufferToBase64 } from '@iloveagents/azure-voice-live-react';
+
+const base64 = arrayBufferToBase64(audioData);
+sendEvent({ type: 'input_audio_buffer.append', audio: base64 });
+```
+
+**Note:** Uses chunked conversion (32KB chunks) to avoid stack overflow from spread operator.
 
 ## Session Configuration
 
@@ -374,14 +416,14 @@ For complete type definitions, see the TypeScript types included with the packag
 
 ## Advanced Examples
 
-### Avatar with Green Screen
+### Avatar with Transparent Background
 
 ```tsx
 import {
   useVoiceLive,
   VoiceLiveAvatar,
   withAvatar,
-  withGreenScreen,
+  withTransparentBackground,
   compose
 } from '@iloveagents/azure-voice-live-react';
 
@@ -390,7 +432,7 @@ const configureAvatar = compose(
     resolution: { width: 1920, height: 1080 },
     bitrate: 2000000,
   }, config),
-  (config) => withGreenScreen('#00FF00FF', config)
+  withTransparentBackground  // No color needed - uses default green
 );
 
 function AvatarApp() {
@@ -569,16 +611,18 @@ const apiKey = await fetchApiKeyFromBackend();
 
 ### 6. Optimize for Use Case
 
-Start with a preset matching your use case, then customize:
+Configure the session to match your use case using helper functions:
 
 ```tsx
-const config = createCallCenterConfig({
+const config = createVoiceLiveConfig({
   connection: { /* ... */ },
-  session: {
+  session: compose(
+    withDeepNoiseReduction,
+    withEchoCancellation,
+    withSemanticVAD({ removeFillerWords: true, interruptResponse: true })
+  )({
     instructions: 'Your custom instructions...',
-    // Preset handles: noise suppression, echo cancellation,
-    // barge-in, filler word removal, etc.
-  },
+  }),
 });
 ```
 
@@ -656,7 +700,7 @@ For detailed setup instructions, see [Azure Voice Live Documentation](https://le
 
 The library has zero runtime dependencies (except React), resulting in minimal bundle impact:
 - **Core**: ~50KB (minified + gzipped)
-- **Full**: ~80KB (minified + gzipped, including all presets and helpers)
+- **Full**: ~80KB (minified + gzipped, including all helpers and utilities)
 
 ### Optimizations
 

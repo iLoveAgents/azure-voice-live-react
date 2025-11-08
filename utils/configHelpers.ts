@@ -156,21 +156,32 @@ export function withAvatar(
 }
 
 /**
- * Add green screen background to avatar
+ * Enable transparent background for avatar using chroma key
  *
- * @param color - Green screen color (default: #00FF00FF)
+ * Sets avatar background to a solid color that can be removed client-side
+ * for transparent overlay on custom backgrounds.
+ *
  * @param config - Session configuration to update
- * @returns Updated configuration
+ * @param options - Optional configuration
+ * @param options.keyColor - Chroma key color (default: '#00FF00FF' green).
+ *                          Change if avatar outfit conflicts with default green.
+ * @returns Updated configuration with background color set
  *
  * @example
  * ```tsx
- * const config = withGreenScreen('#00FF00FF', baseConfig);
+ * // Simple - use default green key
+ * const config = withTransparentBackground(baseConfig);
+ *
+ * // Advanced - custom key color if green conflicts
+ * const config = withTransparentBackground(baseConfig, { keyColor: '#0000FFFF' });
  * ```
  */
-export function withGreenScreen(
-  color: string = '#00FF00FF',
-  config: Partial<VoiceLiveSessionConfig> = {}
+export function withTransparentBackground(
+  config: Partial<VoiceLiveSessionConfig> = {},
+  options: { keyColor?: string } = {}
 ): Partial<VoiceLiveSessionConfig> {
+  const keyColor = options.keyColor || '#00FF00FF';
+
   return {
     ...config,
     avatar: {
@@ -183,7 +194,7 @@ export function withGreenScreen(
         resolution: config.avatar?.video?.resolution || { width: 1920, height: 1080 },
         bitrate: config.avatar?.video?.bitrate || 1000000,
         background: {
-          color,
+          color: keyColor,
         },
       },
     },

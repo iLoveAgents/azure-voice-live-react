@@ -1,9 +1,9 @@
-import { useCallback, useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { useRef, useEffect } from 'react';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function AvatarProxy() {
-  const config = createVoiceLiveConfig('avatar', {
+  const config = createVoiceLiveConfig({
     connection: {
       // Proxy mode: API key secured in backend
       proxyUrl: 'ws://localhost:8080/ws?mode=standard&model=gpt-realtime',
@@ -24,11 +24,7 @@ export function AvatarProxy() {
 
   const { startCapture, stopCapture } = useAudioCapture({
     sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      sendEvent({ type: 'input_audio_buffer.append', audio: base64Audio });
-    }, [sendEvent]),
+    onAudioData: createAudioDataCallback(sendEvent),
   });
 
   const videoRef = useRef<HTMLVideoElement>(null);
