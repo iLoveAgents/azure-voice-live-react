@@ -90,10 +90,10 @@ export function buildSessionConfig(
  * Build minimal session configuration for Agent Service mode
  *
  * Agent mode uses agents configured in Azure AI Foundry portal.
- * Audio settings and voice can be configured here - instructions and avatar
+ * Audio settings, voice, and avatar can be configured here - instructions
  * come from the portal configuration.
  *
- * @param userConfig - Optional audio and voice configuration overrides
+ * @param userConfig - Optional audio, voice, and avatar configuration overrides
  * @returns Minimal session configuration for agent mode
  */
 export function buildAgentSessionConfig(
@@ -135,6 +135,7 @@ export function buildAgentSessionConfig(
     if (userConfig.turnDetection !== undefined) agentConfig.turnDetection = userConfig.turnDetection;
     if (userConfig.inputAudioTranscription !== undefined) agentConfig.inputAudioTranscription = userConfig.inputAudioTranscription;
     if (userConfig.voice !== undefined) agentConfig.voice = userConfig.voice;
+    if (userConfig.avatar !== undefined) agentConfig.avatar = userConfig.avatar;
   }
 
   // Convert to session.update format

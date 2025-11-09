@@ -15,6 +15,7 @@ import { FunctionCalling } from './pages/FunctionCalling';
 import { AudioVisualizer } from './pages/AudioVisualizer';
 import { VisemeExample } from './pages/VisemeExample';
 import AgentService from './pages/AgentService';
+import AgentServiceAvatar from './pages/AgentServiceAvatar';
 
 // MSAL configuration for Agent Service authentication
 const msalConfig = {
@@ -59,6 +60,7 @@ function App() {
           <Route path="/avatar-proxy" element={<AvatarProxy />} />
           <Route path="/avatar-proxy-msal" element={<AvatarProxyMSAL />} />
           <Route path="/agent-service" element={<AgentService />} />
+          <Route path="/agent-service-avatar" element={<AgentServiceAvatar />} />
           <Route path="/function-calling" element={<FunctionCalling />} />
           <Route path="/audio-visualizer" element={<AudioVisualizer />} />
           <Route path="/viseme" element={<VisemeExample />} />

@@ -24,7 +24,8 @@ export function HomePage() {
 
       <h2 style={{ marginTop: '30px' }}>Agent Service</h2>
       <ul>
-        <li><Link to="/agent-service">Agent Service</Link></li>
+        <li><Link to="/agent-service">Agent Service - Voice Only</Link></li>
+        <li><Link to="/agent-service-avatar">Agent Service - with Avatar</Link></li>
       </ul>
 
       <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>
