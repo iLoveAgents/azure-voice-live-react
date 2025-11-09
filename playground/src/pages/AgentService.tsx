@@ -1,20 +1,13 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { useAudioCapture } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 
 export default function AgentServiceProxy(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
-  const nextPlayTimeRef = useRef<number>(0);
-  const wsRef = useRef<WebSocket | null>(null);
   const { instance, accounts } = useMsal();
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  const [sessionReady, setSessionReady] = useState(false);
-  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
   const backendProxyUrl = import.meta.env.VITE_BACKEND_PROXY_URL || 'ws://localhost:8080';
 
@@ -71,196 +64,48 @@ export default function AgentServiceProxy(): JSX.Element {
     }
   }, [accounts]);
 
-  // Connect to backend proxy
-  const connect = useCallback(async () => {
-    if (!accessToken) {
-      setAuthError('Please sign in first');
-      return;
-    }
+  // Build proxy URL with token
+  const proxyUrl = accessToken
+    ? `${backendProxyUrl}/ws?mode=agent&token=${encodeURIComponent(accessToken)}`
+    : null;
 
-    try {
-      setConnectionState('connecting');
-
-      // Connect to backend with token as query parameter (agent mode)
-      const ws = new WebSocket(`${backendProxyUrl}/ws?mode=agent&token=${encodeURIComponent(accessToken)}`);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        console.log('[Agent] Connected to proxy');
-        setConnectionState('connected');
-
-        // Initialize AudioContext
-        if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-          const destination = audioContextRef.current.createMediaStreamDestination();
-          setAudioStream(destination.stream);
-        }
-      };
-
-      ws.onmessage = async (event) => {
-        try {
-          // Handle both text and blob messages
-          let data: string;
-          if (event.data instanceof Blob) {
-            data = await event.data.text();
-          } else {
-            data = event.data;
-          }
-
-          const message = JSON.parse(data);
-
-          // Only log important events (not every message)
-          const importantEvents = ['session.created', 'session.updated', 'error', 'conversation.item.input_audio_transcription.completed'];
-          if (importantEvents.includes(message.type)) {
-            console.log(`[Agent] ${message.type}:`, message);
-          }
-
-          // Handle audio delta
-          if (message.type === 'response.audio.delta' && message.delta) {
-            const audioData = Uint8Array.from(atob(message.delta), c => c.charCodeAt(0));
-            playAudio(audioData);
-          }
-
-          // Handle session created - send configuration
-          if (message.type === 'session.created') {
-            ws.send(JSON.stringify({
-              type: 'session.update',
-              session: {
-                modalities: ['text', 'audio'],
-                input_audio_format: 'pcm16',
-                output_audio_format: 'pcm16',
-                input_audio_transcription: { model: 'whisper-1' },
-                turn_detection: {
-                  type: 'server_vad',
-                  threshold: 0.5,
-                  prefix_padding_ms: 300,
-                  silence_duration_ms: 500
-                }
-              }
-            }));
-          }
-
-          // Handle session updated - now ready to send audio
-          if (message.type === 'session.updated') {
-            setSessionReady(true);
-          }
-
-          // Handle errors from Azure
-          if (message.type === 'error') {
-            const errorMsg = message.error?.message || message.error?.code || 'Unknown error from Azure';
-            console.error('[Agent] Error:', message);
-            setAuthError(`Azure Error: ${errorMsg}`);
-          }
-        } catch (error) {
-          console.error('Error parsing message:', error);
-        }
-      };
-
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        setConnectionState('disconnected');
-        setAuthError('Connection error');
-      };
-
-      ws.onclose = (event) => {
-        console.log(`[Agent] WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}`);
-        setConnectionState('disconnected');
-        if (!event.wasClean && event.code !== 1000) {
-          // Map common close codes to user-friendly messages
-          const closeMessages: Record<number, string> = {
-            1007: 'Invalid data format or permissions issue',
-            1008: 'Policy violation',
-            1011: 'Server error',
-          };
-          const userMessage = closeMessages[event.code] || `Connection closed unexpectedly (code: ${event.code})`;
-          setAuthError(event.reason || userMessage);
-        }
-      };
-
-    } catch (error) {
-      console.error('Connection error:', error);
-      setConnectionState('disconnected');
-      setAuthError(error instanceof Error ? error.message : String(error));
-    }
-  }, [accessToken, backendProxyUrl]);
-
-  // Disconnect
-  const disconnect = useCallback(() => {
-    // Stop all playing audio
-    audioQueueRef.current.forEach((source) => {
-      try {
-        source.stop();
-      } catch (e) {
-        // Ignore if already stopped
+  // Configure Voice Live with proxy
+  const config = proxyUrl ? createVoiceLiveConfig({
+    connection: {
+      proxyUrl,
+    },
+    session: {
+      modalities: ['text', 'audio'],
+      voice: {
+        name: 'en-US-AvaMultilingualNeural',
+        type: 'azure-standard'
+      },
+      inputAudioFormat: 'pcm16',
+      outputAudioFormat: 'pcm16',
+      inputAudioTranscription: { model: 'whisper-1' },
+      turnDetection: {
+        type: 'server_vad',
+        threshold: 0.5,
+        prefixPaddingMs: 300,
+        silenceDurationMs: 500
       }
-    });
-    audioQueueRef.current = [];
-    nextPlayTimeRef.current = 0;
-
-    // Close WebSocket
-    if (wsRef.current) {
-      wsRef.current.close();
-      wsRef.current = null;
-    }
-
-    setConnectionState('disconnected');
-    setSessionReady(false);
-  }, []);
-
-  // Play audio with queuing to prevent overlaps
-  const playAudio = useCallback((audioData: Uint8Array) => {
-    if (!audioContextRef.current) return;
-
-    const audioContext = audioContextRef.current;
-    const int16Array = new Int16Array(audioData.buffer);
-    const float32Array = new Float32Array(int16Array.length);
-
-    for (let i = 0; i < int16Array.length; i++) {
-      float32Array[i] = int16Array[i] / 32768.0;
-    }
-
-    const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
-    audioBuffer.getChannelData(0).set(float32Array);
-
-    const source = audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(audioContext.destination);
-
-    // Queue audio to play sequentially
-    const currentTime = audioContext.currentTime;
-    const startTime = Math.max(currentTime, nextPlayTimeRef.current);
-
-    source.start(startTime);
-    nextPlayTimeRef.current = startTime + audioBuffer.duration;
-
-    // Clean up when done
-    source.onended = () => {
-      const index = audioQueueRef.current.indexOf(source);
-      if (index > -1) {
-        audioQueueRef.current.splice(index, 1);
+    },
+    onEvent: (event) => {
+      // Log transcriptions and agent responses
+      if (event.type === 'conversation.item.input_audio_transcription.completed') {
+        console.log(`[Agent] You: "${event.transcript}"`);
+      } else if (event.type === 'response.audio_transcript.done') {
+        console.log(`[Agent] Agent: "${event.transcript}"`);
+      } else if (event.type === 'error') {
+        console.error('[Agent] Error:', event);
+        setAuthError(`Azure Error: ${event.error?.message || event.error?.code || 'Unknown error'}`);
       }
-    };
-
-    audioQueueRef.current.push(source);
-  }, []);
-
-  // Send audio data to backend proxy
-  const sendAudioData = useCallback((audioData: ArrayBuffer) => {
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN && sessionReady) {
-      const uint8Array = new Uint8Array(audioData);
-      const base64Audio = btoa(String.fromCharCode(...Array.from(uint8Array)));
-      wsRef.current.send(JSON.stringify({
-        type: 'input_audio_buffer.append',
-        audio: base64Audio
-      }));
     }
-  }, [sessionReady]);
+  }) : null;
 
-  const { startCapture, stopCapture, isCapturing } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: useCallback((audioData: ArrayBuffer) => {
-      sendAudioData(audioData);
-    }, [sendAudioData]),
+  // Voice Live hook with integrated microphone and interruption handling
+  const { connect, disconnect, connectionState, audioStream } = useVoiceLive(config || {
+    connection: { proxyUrl: '' }
   });
 
   // Setup audio element
@@ -272,30 +117,22 @@ export default function AgentServiceProxy(): JSX.Element {
   }, [audioStream]);
 
   const handleStart = async (): Promise<void> => {
+    if (!accessToken) {
+      setAuthError('Please sign in first');
+      return;
+    }
+
     try {
-      setAuthError(null); // Clear previous errors
+      setAuthError(null);
       await connect();
-      // Audio capture will start automatically when session is ready
+      console.log('[Agent] Connected - microphone will auto-start when session ready');
     } catch (err) {
       console.error('[Agent] Start error:', err);
       setAuthError(err instanceof Error ? err.message : String(err));
     }
   };
 
-  // Start audio capture when session is ready
-  useEffect(() => {
-    if (sessionReady && connectionState === 'connected' && !isCapturing) {
-      startCapture().then(() => {
-        console.log('[Agent] Microphone started');
-      }).catch((err) => {
-        console.error('[Agent] Mic start failed:', err);
-        setAuthError(`Microphone error: ${err.message}`);
-      });
-    }
-  }, [sessionReady, connectionState, isCapturing, startCapture]);
-
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
     disconnect();
   };
 
