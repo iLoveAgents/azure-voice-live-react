@@ -11,6 +11,11 @@ export default function AgentServiceProxy(): JSX.Element {
 
   const backendProxyUrl = import.meta.env.VITE_BACKEND_PROXY_URL || 'ws://localhost:8080';
 
+  // Check if MSAL is configured
+  const msalConfigured =
+    import.meta.env.VITE_AZURE_CLIENT_ID &&
+    import.meta.env.VITE_AZURE_CLIENT_ID !== '00000000-0000-0000-0000-000000000000';
+
   // Acquire access token for Agent Service
   const acquireToken = async () => {
     if (accounts.length === 0) {
@@ -78,16 +83,21 @@ export default function AgentServiceProxy(): JSX.Element {
       modalities: ['text', 'audio'],
       voice: {
         name: 'en-US-AvaMultilingualNeural',
-        type: 'azure-standard'
+        type: 'azure-standard',
+        rate: 0.9  // Slightly slower for more natural speech
       },
       inputAudioFormat: 'pcm16',
       outputAudioFormat: 'pcm16',
       inputAudioTranscription: { model: 'whisper-1' },
       turnDetection: {
-        type: 'server_vad',
-        threshold: 0.5,
+        type: 'azure_semantic_vad',
+        threshold: 0.6,  // Higher threshold = less sensitive
         prefixPaddingMs: 300,
-        silenceDurationMs: 500
+        speechDurationMs: 100,  // Minimum speech duration
+        silenceDurationMs: 700,  // Longer silence before turn ends
+        removeFillerWords: true,
+        interruptResponse: true,
+        createResponse: true
       }
     },
     onEvent: (event) => {
@@ -145,6 +155,19 @@ export default function AgentServiceProxy(): JSX.Element {
     <div style={{ padding: '2rem', fontFamily: 'system-ui', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>Agent Service with Backend Proxy</h1>
 
+      {/* Configuration Error */}
+      {!msalConfigured && (
+        <div style={{ marginBottom: '2rem', padding: '1rem', background: '#ffebee', color: '#c62828', borderRadius: '4px' }}>
+          <h3 style={{ marginTop: 0 }}>MSAL Configuration Missing</h3>
+          <p>Please configure the following environment variables in your <code>.env</code> file:</p>
+          <ul>
+            <li><code>VITE_AZURE_CLIENT_ID</code> - Your Azure AD application (client) ID</li>
+            <li><code>VITE_AZURE_TENANT_ID</code> - Your Azure AD tenant ID</li>
+          </ul>
+          <p>See the <a href="https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app" target="_blank" rel="noopener noreferrer">Azure documentation</a> for how to register an application.</p>
+        </div>
+      )}
+
       {/* Authentication Status */}
       <div style={{ marginBottom: '2rem', padding: '1rem', background: '#f5f5f5', borderRadius: '4px' }}>
         <h3 style={{ marginTop: 0 }}>Authentication Status</h3>
@@ -185,43 +208,6 @@ export default function AgentServiceProxy(): JSX.Element {
         <div style={{ marginTop: '0.5rem' }}>
           Status: {connectionState}
         </div>
-      </div>
-
-      {/* Features */}
-      <div style={{ marginBottom: '2rem', padding: '1rem', background: '#e8f5e9', borderRadius: '4px' }}>
-        <h3 style={{ marginTop: 0 }}>Features</h3>
-        <ul>
-          <li>✓ Multilingual voice (adapts accent to language)</li>
-          <li>✓ Automatic interruption handling (barge-in)</li>
-          <li>✓ Automatic microphone management</li>
-          <li>✓ Speech transcription with Whisper</li>
-          <li>✓ Server-side voice activity detection</li>
-        </ul>
-      </div>
-
-      {/* Architecture Diagram */}
-      <div style={{ marginBottom: '2rem', padding: '1rem', background: '#e3f2fd', borderRadius: '4px' }}>
-        <h3 style={{ marginTop: 0 }}>Architecture</h3>
-        <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
-          Browser (MSAL + useVoiceLive) → Backend Proxy (Node.js) → Azure Voice Live Agent Service
-          <br />
-          <span style={{ opacity: 0.7 }}>Token acquired via MSAL, sent to proxy, proxy adds Authorization header</span>
-        </div>
-      </div>
-
-      {/* Setup Instructions */}
-      <div style={{ padding: '1rem', background: '#fff3cd', borderRadius: '4px' }}>
-        <h3 style={{ marginTop: 0 }}>Setup Instructions</h3>
-        <ol>
-          <li>Ensure your backend proxy server is running</li>
-          <li>Configure Azure AD app with appropriate scopes</li>
-          <li>Sign in and click "Start"</li>
-          <li>Speak to the agent - it will respond in the language you use</li>
-          <li>Interrupt the agent at any time by speaking</li>
-        </ol>
-        <p style={{ marginTop: '1rem' }}>
-          <strong>Backend URL:</strong> {backendProxyUrl}
-        </p>
       </div>
 
       {/* Hidden audio element */}

@@ -325,8 +325,8 @@ function convertVoiceConfig(voice: string | StandardVoice | VoiceConfig): any {
     voiceConfig.temperature = voice.temperature;
   }
 
-  if (voice.rate) {
-    voiceConfig.rate = voice.rate;
+  if (voice.rate !== undefined) {
+    voiceConfig.rate = String(voice.rate);
   }
 
   return voiceConfig;
