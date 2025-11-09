@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, createVoiceLiveConfig, withAvatar } from '@iloveagents/azure-voice-live-react';
-import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ConfigItem, ErrorPanel } from '../components';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function AvatarBasic() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -23,7 +23,6 @@ export function AvatarBasic() {
     }),
   });
 
-  // Voice Live hook - mic capture is integrated and auto-starts!
   const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
   useEffect(() => {
@@ -61,31 +60,22 @@ export function AvatarBasic() {
   return (
     <SampleLayout
       title="Basic Avatar"
-      description="Simple avatar with video stream rendering and character configuration. The microphone auto-starts when ready."
+      description="Simple avatar with video stream rendering. Character: lisa, style: casual-sitting."
     >
       <ErrorPanel error={error} />
 
       <StatusBadge status={connectionState} />
 
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected}>
+          Start Avatar
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
       <Section>
-        <ControlGroup>
-          <button onClick={handleStart} disabled={isConnected}>
-            Start Avatar
-          </button>
-          <button onClick={handleStop} disabled={!isConnected}>
-            Stop
-          </button>
-        </ControlGroup>
-      </Section>
-
-      <ConfigPanel title="Avatar Configuration">
-        <ConfigItem label="Character" value="lisa" />
-        <ConfigItem label="Style" value="casual-sitting" />
-        <ConfigItem label="Codec" value="H.264" />
-        <ConfigItem label="Voice" value="en-US-Ava:DragonHDLatestNeural" />
-      </ConfigPanel>
-
-      <Section title="Video Stream">
         <div style={{
           backgroundColor: '#f5f5f5',
           borderRadius: '8px',

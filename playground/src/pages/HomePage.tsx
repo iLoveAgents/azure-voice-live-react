@@ -4,7 +4,6 @@ interface SampleInfo {
   path: string;
   title: string;
   description: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
   features: string[];
 }
 
@@ -14,28 +13,24 @@ const samples: Record<string, SampleInfo[]> = {
       path: '/voice-basic',
       title: 'Basic Voice Chat',
       description: 'Simple voice conversation with auto-start microphone and minimal configuration',
-      difficulty: 'Beginner',
       features: ['Auto-start', 'Basic setup']
     },
     {
       path: '/voice-advanced',
       title: 'Advanced Voice Chat',
       description: 'Advanced VAD configuration with echo cancellation, noise suppression, and filler word removal',
-      difficulty: 'Intermediate',
       features: ['Azure Semantic VAD', 'Echo cancellation', 'Noise suppression', 'Barge-in']
     },
     {
       path: '/voice-proxy',
       title: 'Voice with Proxy',
       description: 'Secure proxy mode with API key stored in backend instead of client',
-      difficulty: 'Intermediate',
       features: ['Secure proxy', 'Backend auth']
     },
     {
       path: '/voice-proxy-msal',
       title: 'Voice with MSAL Auth',
       description: 'MSAL authentication integration with token acquisition and refresh',
-      difficulty: 'Advanced',
       features: ['MSAL', 'Token auth', 'Sign-in flow']
     }
   ],
@@ -44,28 +39,24 @@ const samples: Record<string, SampleInfo[]> = {
       path: '/avatar-basic',
       title: 'Basic Avatar',
       description: 'Simple avatar with video stream rendering and character configuration',
-      difficulty: 'Beginner',
       features: ['Video render', 'Character: lisa', 'H.264 codec']
     },
     {
       path: '/avatar-advanced',
       title: 'Advanced Avatar',
       description: 'High-resolution avatar with transparent background removal and advanced VAD',
-      difficulty: 'Intermediate',
       features: ['Chroma key', '1080p video', 'Transparent background', 'Semantic VAD']
     },
     {
       path: '/avatar-proxy',
       title: 'Avatar with Proxy',
       description: 'Secure proxy mode for avatar with environment-based configuration',
-      difficulty: 'Intermediate',
       features: ['Secure proxy', 'Backend auth']
     },
     {
       path: '/avatar-proxy-msal',
       title: 'Avatar with MSAL Auth',
       description: 'Avatar with MSAL authentication and manual audio capture',
-      difficulty: 'Advanced',
       features: ['MSAL', 'Manual audio capture', 'Token auth']
     }
   ],
@@ -74,14 +65,12 @@ const samples: Record<string, SampleInfo[]> = {
       path: '/agent-service',
       title: 'Agent Service (Voice)',
       description: 'Full backend agent service with MSAL auth, event logging, and Whisper transcription',
-      difficulty: 'Expert',
       features: ['Backend proxy', 'MSAL', 'Event logging', 'Whisper', 'PCM16 audio']
     },
     {
       path: '/agent-service-avatar',
       title: 'Agent Service (Avatar)',
       description: 'Complete agent service with avatar integration and all advanced features',
-      difficulty: 'Expert',
       features: ['Video + Agent', 'Full backend', 'MSAL', 'Event logs']
     }
   ],
@@ -90,36 +79,24 @@ const samples: Record<string, SampleInfo[]> = {
       path: '/function-calling',
       title: 'Function Calling',
       description: 'Tool/function definition system with custom get_weather and get_time tools',
-      difficulty: 'Intermediate',
       features: ['Tool calls', 'Function execution', 'Event logging']
     },
     {
       path: '/audio-visualizer',
       title: 'Audio Visualizer',
       description: 'Real-time audio waveform visualization using Canvas and FFT analysis',
-      difficulty: 'Intermediate',
       features: ['Canvas', 'FFT analysis', 'Waveform', 'Animation']
     },
     {
       path: '/viseme',
       title: 'Viseme Data',
       description: 'Capture viseme data for custom avatar mouth shapes (works with Standard voices only)',
-      difficulty: 'Advanced',
       features: ['22 viseme types', 'Audio sync', 'Standard voices only']
     }
   ]
 };
 
-const difficultyColors: Record<string, { bg: string; text: string }> = {
-  Beginner: { bg: '#e8f5e9', text: '#2e7d32' },
-  Intermediate: { bg: '#fff4e5', text: '#e67700' },
-  Advanced: { bg: '#fff3e0', text: '#d84315' },
-  Expert: { bg: '#f3e5f5', text: '#6a1b9a' }
-};
-
 function SampleCard({ sample }: { sample: SampleInfo }) {
-  const diffColor = difficultyColors[sample.difficulty];
-
   return (
     <Link
       to={sample.path}
@@ -146,25 +123,10 @@ function SampleCard({ sample }: { sample: SampleInfo }) {
         e.currentTarget.style.transform = 'translateY(0)';
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#0078d4' }}>
-          {sample.title}
-        </h3>
-        <span style={{
-          display: 'inline-block',
-          padding: '4px 12px',
-          borderRadius: '12px',
-          fontSize: '12px',
-          fontWeight: 500,
-          backgroundColor: diffColor.bg,
-          color: diffColor.text,
-          whiteSpace: 'nowrap',
-          marginLeft: '12px'
-        }}>
-          {sample.difficulty}
-        </span>
-      </div>
-      <p style={{ margin: '8px 0 12px 0', fontSize: '14px', color: '#666', lineHeight: '1.5' }}>
+      <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600, color: '#0078d4' }}>
+        {sample.title}
+      </h3>
+      <p style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#666', lineHeight: '1.5' }}>
         {sample.description}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
