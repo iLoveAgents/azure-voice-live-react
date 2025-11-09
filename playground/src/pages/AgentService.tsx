@@ -183,15 +183,27 @@ export default function AgentServiceProxy(): JSX.Element {
           Stop
         </button>
         <div style={{ marginTop: '0.5rem' }}>
-          {connectionState} {isCapturing && '(mic)'}
+          Status: {connectionState}
         </div>
+      </div>
+
+      {/* Features */}
+      <div style={{ marginBottom: '2rem', padding: '1rem', background: '#e8f5e9', borderRadius: '4px' }}>
+        <h3 style={{ marginTop: 0 }}>Features</h3>
+        <ul>
+          <li>✓ Multilingual voice (adapts accent to language)</li>
+          <li>✓ Automatic interruption handling (barge-in)</li>
+          <li>✓ Automatic microphone management</li>
+          <li>✓ Speech transcription with Whisper</li>
+          <li>✓ Server-side voice activity detection</li>
+        </ul>
       </div>
 
       {/* Architecture Diagram */}
       <div style={{ marginBottom: '2rem', padding: '1rem', background: '#e3f2fd', borderRadius: '4px' }}>
         <h3 style={{ marginTop: 0 }}>Architecture</h3>
         <div style={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
-          Browser (MSAL) → Backend Proxy (Node.js) → Azure Voice Live Agent Service
+          Browser (MSAL + useVoiceLive) → Backend Proxy (Node.js) → Azure Voice Live Agent Service
           <br />
           <span style={{ opacity: 0.7 }}>Token acquired via MSAL, sent to proxy, proxy adds Authorization header</span>
         </div>
@@ -204,6 +216,8 @@ export default function AgentServiceProxy(): JSX.Element {
           <li>Ensure your backend proxy server is running</li>
           <li>Configure Azure AD app with appropriate scopes</li>
           <li>Sign in and click "Start"</li>
+          <li>Speak to the agent - it will respond in the language you use</li>
+          <li>Interrupt the agent at any time by speaking</li>
         </ol>
         <p style={{ marginTop: '1rem' }}>
           <strong>Backend URL:</strong> {backendProxyUrl}
