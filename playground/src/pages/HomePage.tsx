@@ -96,7 +96,7 @@ const samples: Record<string, SampleInfo[]> = {
   ]
 };
 
-function SampleCard({ sample }: { sample: SampleInfo }) {
+function SampleCard({ sample }: { sample: SampleInfo }): JSX.Element {
   return (
     <Link
       to={sample.path}
@@ -151,7 +151,7 @@ function SampleCard({ sample }: { sample: SampleInfo }) {
   );
 }
 
-export function HomePage() {
+export function HomePage(): JSX.Element {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px' }}>
       <header style={{ marginBottom: '48px' }}>

@@ -60,6 +60,7 @@ export function VoiceProxyMSAL(): JSX.Element {
     if (accounts.length > 0 && !accessToken) {
       acquireToken();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   const config = createVoiceLiveConfig({

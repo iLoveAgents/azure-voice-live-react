@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, withViseme , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig, withViseme } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 interface VisemeData {
@@ -33,7 +33,7 @@ export function VisemeExample(): JSX.Element {
 
   const { connect, disconnect, connectionState, getAudioPlaybackTime, audioStream } = useVoiceLive({
     ...config,
-    onEvent: useCallback((event: any) => {
+    onEvent: useCallback((event: { type: string; viseme_id?: number; audio_offset_ms?: number }) => {
       if (event.type === 'response.animation_viseme.delta') {
         // Buffer viseme events for synchronized playback
         visemeBufferRef.current.push({
@@ -59,7 +59,7 @@ export function VisemeExample(): JSX.Element {
 
   // Synchronize viseme display with audio playback
   useEffect(() => {
-    const syncVisemes = () => {
+    const syncVisemes = (): void => {
       const currentTime = getAudioPlaybackTime();
 
       if (currentTime !== null && visemeBufferRef.current.length > 0) {
@@ -104,14 +104,13 @@ export function VisemeExample(): JSX.Element {
     }
   };
 
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
     disconnect();
     setError(null);
   };
 
   // Viseme to mouth shape mapping (simplified)
-  const getVisemeName = (id: number) => {
+  const getVisemeName = (id: number): string => {
     const visemes: { [key: number]: string } = {
       0: 'Silence',
       1: 'AE/AX/AH',

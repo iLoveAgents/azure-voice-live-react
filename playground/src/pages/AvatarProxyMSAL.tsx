@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useVoiceLive, VoiceLiveAvatar, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, VoiceLiveAvatar, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
@@ -60,6 +60,7 @@ export function AvatarProxyMSAL(): JSX.Element {
     if (accounts.length > 0 && !accessToken) {
       acquireToken();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   const config = createVoiceLiveConfig({
@@ -97,8 +98,7 @@ export function AvatarProxyMSAL(): JSX.Element {
     }
   };
 
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
     disconnect();
     setError(null);
   };

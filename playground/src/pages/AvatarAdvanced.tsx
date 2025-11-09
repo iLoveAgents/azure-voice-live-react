@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useVoiceLive, VoiceLiveAvatar, createVoiceLiveConfig, withTransparentBackground } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
-export function AvatarAdvanced() {
+export function AvatarAdvanced(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   const config = createVoiceLiveConfig({
@@ -45,7 +45,7 @@ export function AvatarAdvanced() {
   // Voice Live hook - mic capture is integrated and auto-starts!
   const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     try {
       setError(null);
       await connect();
@@ -56,7 +56,7 @@ export function AvatarAdvanced() {
     }
   };
 
-  const handleStop = () => {
+  const handleStop = (): void => {
     disconnect();
     setError(null);
   };

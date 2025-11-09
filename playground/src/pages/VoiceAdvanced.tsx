@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+import { SampleLayout, StatusBadge, ControlGroup, ErrorPanel } from '../components';
 
 export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);

@@ -1,12 +1,12 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
-export function FunctionCalling() {
+export function FunctionCalling(): JSX.Element {
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const addLog = (message: string) => {
+  const addLog = (message: string): void => {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
   };
 
@@ -48,7 +48,7 @@ export function FunctionCalling() {
     addLog(`🔧 Tool called: ${toolName}`);
     addLog(`📥 Args: ${args}`);
 
-    let result: any;
+    let result: Record<string, unknown>;
 
     try {
       const parsedArgs = JSON.parse(args);
@@ -91,7 +91,7 @@ export function FunctionCalling() {
     }
   }, []);
 
-  const sendEventRef = useRef<(event: any) => void>(() => {});
+  const sendEventRef = useRef<(event: Record<string, unknown>) => void>(() => {});
 
   const config = createVoiceLiveConfig({
     connection: {
@@ -125,7 +125,7 @@ export function FunctionCalling() {
     }
   }, [audioStream]);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     addLog('Starting...');
     try {
       setError(null);
@@ -138,7 +138,7 @@ export function FunctionCalling() {
     }
   };
 
-  const handleStop = () => {
+  const handleStop = (): void => {
     disconnect();
     setError(null);
     addLog('Stopped');

@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function AudioVisualizer(): JSX.Element {
@@ -47,7 +47,7 @@ export function AudioVisualizer(): JSX.Element {
     source.connect(analyser);
 
     // Draw visualization
-    const draw = () => {
+    const draw = (): void => {
       animationFrameRef.current = requestAnimationFrame(draw);
 
       analyser.getByteTimeDomainData(dataArray);
@@ -102,8 +102,7 @@ export function AudioVisualizer(): JSX.Element {
     }
   };
 
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
     disconnect();
     setError(null);
   };

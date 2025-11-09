@@ -66,6 +66,7 @@ export default function AgentServiceProxy(): JSX.Element {
     if (accounts.length > 0 && !accessToken) {
       acquireToken();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   // Build proxy URL with token
