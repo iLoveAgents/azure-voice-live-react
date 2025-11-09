@@ -97,26 +97,73 @@ function VoiceAssistant() {
 
 No manual audio coordination needed!
 
-## Architecture
+### Voice-Only with Visualization
 
-### Core Components
+For voice-only applications, the hook provides a pre-configured `audioAnalyser` for effortless visualization:
 
+```tsx
+import { useRef, useEffect } from 'react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
+
+function VoiceVisualizer() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  const config = createVoiceLiveConfig({
+    connection: {
+      resourceName: 'your-resource-name',
+      apiKey: process.env.AZURE_VOICE_LIVE_KEY,
+    },
+  });
+
+  // Get pre-configured audio analyser - no manual setup needed!
+  const { connect, disconnect, audioStream, audioAnalyser, connectionState } = useVoiceLive(config);
+
+  // Connect audio stream for playback
+  useEffect(() => {
+    if (audioRef.current && audioStream) {
+      audioRef.current.srcObject = audioStream;
+      audioRef.current.play().catch(console.error);
+    }
+  }, [audioStream]);
+
+  // Visualize audio using the pre-configured analyser
+  useEffect(() => {
+    if (!audioAnalyser || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const dataArray = new Uint8Array(audioAnalyser.frequencyBinCount);
+
+    const draw = () => {
+      requestAnimationFrame(draw);
+      audioAnalyser.getByteFrequencyData(dataArray);
+
+      // Your visualization logic here
+      // No need to create AudioContext or AnalyserNode manually!
+    };
+    draw();
+  }, [audioAnalyser]);
+
+  return (
+    <div>
+      <canvas ref={canvasRef} width={800} height={200} />
+      <audio ref={audioRef} autoPlay hidden />
+      <button onClick={connect}>Start</button>
+      <button onClick={disconnect}>Stop</button>
+    </div>
+  );
+}
 ```
-@iloveagents/azure-voice-live-react
-├── Hooks
-│   ├── useVoiceLive()        - Main Voice Live API integration (includes mic capture)
-│   └── useAudioCapture()     - Standalone microphone capture (optional, advanced use)
-├── Components
-│   └── VoiceLiveAvatar         - Avatar video with chroma key support
-├── Configuration
-│   ├── Session Builder       - Type-safe configuration builder
-│   ├── createVoiceLiveConfig - Simple configuration helper
-│   └── Helpers              - 25+ fluent configuration functions
-└── Types
-    └── Complete TypeScript definitions for Azure Voice Live API
-```
 
-**Note**: `useVoiceLive` now includes integrated microphone capture. You typically don't need `useAudioCapture` unless you're building custom audio processing pipelines.
+**No audio complexity** - the hook handles:
+- AudioContext creation and configuration (48kHz, low-latency)
+- Professional-grade Lanczos-3 resampling (24kHz → 48kHz)
+- AnalyserNode setup for visualization
+- Audio routing and stream management
+- Proper cleanup on disconnect
 
 ## Configuration API
 
@@ -267,7 +314,11 @@ interface UseVoiceLiveReturn {
 
   // Media streams
   videoStream: MediaStream | null;      // Avatar video stream (WebRTC)
-  audioStream: MediaStream | null;      // Avatar audio stream
+  audioStream: MediaStream | null;      // Audio stream for playback
+
+  // Audio visualization (voice-only mode)
+  audioContext: AudioContext | null;    // Web Audio API context
+  audioAnalyser: AnalyserNode | null;   // Pre-configured analyser for visualization
 
   // Microphone state and control
   isMicActive: boolean;                 // Whether microphone is capturing
@@ -281,6 +332,10 @@ interface UseVoiceLiveReturn {
   // Communication methods
   sendEvent: (event: any) => void;      // Send custom event to API
   updateSession: (config: Partial<VoiceLiveSessionConfig>) => void; // Update session
+
+  // Advanced features
+  isReady: boolean;                     // Whether session is ready for interaction
+  error: string | null;                 // Error message if any
 }
 ```
 

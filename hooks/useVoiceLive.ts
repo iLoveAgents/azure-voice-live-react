@@ -90,11 +90,14 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const [error, setError] = useState<string | null>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
+  const [, forceUpdate] = useState({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioStreamDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const audioGainRef = useRef<GainNode | null>(null);
   const audioQueueRef = useRef<AudioBufferSourceNode[]>([]);
   const nextPlayTimeRef = useRef<number>(0);
   const currentResponseIdRef = useRef<string | null>(null);
@@ -203,15 +206,41 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
    * Play audio chunk for voice-only mode with proper sequential scheduling
    * Following Microsoft Azure Voice Live API and OpenAI Realtime API patterns
    */
-  const playAudioChunk = useCallback((base64Audio: string) => {
+  const playAudioChunk = useCallback(async (base64Audio: string) => {
     try {
-      // Initialize AudioContext if needed (24kHz for Azure Voice Live API)
+      // Initialize AudioContext with optimal configuration for real-time audio
+      // latencyHint: "interactive" minimizes latency for real-time applications
+      // Reference: W3C Web Audio API - https://www.w3.org/TR/webaudio/
       if (!audioContextRef.current) {
-        audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+        audioContextRef.current = new AudioContext({
+          latencyHint: 'interactive',
+          // Let browser choose optimal sample rate (typically 48kHz)
+        });
         nextPlayTimeRef.current = 0;
+        console.log(`AudioContext created with sample rate: ${audioContextRef.current.sampleRate}Hz`);
+        console.log(`Base latency: ${(audioContextRef.current.baseLatency * 1000).toFixed(2)}ms`);
+
+        // Create gain node for routing audio to multiple destinations
+        audioGainRef.current = audioContextRef.current.createGain();
+        audioGainRef.current.gain.value = 1.0;
+
+        // Create analyser for visualization
+        audioAnalyserRef.current = audioContextRef.current.createAnalyser();
+        audioAnalyserRef.current.fftSize = 256;
+        audioAnalyserRef.current.smoothingTimeConstant = 0.8;
+
+        // Trigger component re-render to expose audioContext and audioAnalyser
+        forceUpdate({});
       }
 
       const audioContext = audioContextRef.current;
+
+      // Resume AudioContext if suspended (browser autoplay policy)
+      // Await resume to ensure context is in running state before scheduling audio
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log(`AudioContext resumed from suspended state. New state: ${audioContext.state}`);
+      }
 
       // Decode base64 to PCM16 (following Microsoft's pattern)
       const binaryString = atob(base64Audio);
@@ -223,38 +252,90 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       // Convert PCM16 to Float32 for Web Audio API
       // PCM16 range: -32768 to 32767 → Float32 range: -1.0 to 1.0
       const pcm16 = new Int16Array(bytes.buffer);
-      const float32 = new Float32Array(pcm16.length);
+      const float32Source = new Float32Array(pcm16.length);
       for (let i = 0; i < pcm16.length; i++) {
         const sample = pcm16[i];
         if (sample !== undefined) {
-          float32[i] = sample / 32768.0;
+          float32Source[i] = sample / 32768.0;
         }
       }
 
-      // Create AudioBuffer (mono channel, 24kHz sample rate)
-      const audioBuffer = audioContext.createBuffer(1, float32.length, 24000);
+      // Resample from 24kHz (Azure) to AudioContext sample rate (typically 48kHz)
+      // Using Lanczos-3 interpolation for professional audio quality
+      // Reference: Web Audio API Best Practices - https://www.w3.org/TR/webaudio/
+      const sourceSampleRate = 24000;
+      const targetSampleRate = audioContext.sampleRate;
+      const sampleRateRatio = targetSampleRate / sourceSampleRate;
+      const outputLength = Math.ceil(float32Source.length * sampleRateRatio);
+      const float32 = new Float32Array(outputLength);
+
+      // Lanczos-3 kernel function for high-quality resampling
+      const lanczosA = 3;
+      const lanczosKernel = (x: number): number => {
+        if (Math.abs(x) >= lanczosA) return 0;
+        if (x === 0) return 1;
+        const pi = Math.PI;
+        const px = pi * x;
+        const pa = px / lanczosA;
+        return (Math.sin(px) * Math.sin(pa)) / (px * pa);
+      };
+
+      // Lanczos-3 resampling (professional audio quality)
+      for (let i = 0; i < outputLength; i++) {
+        const sourceIndex = i / sampleRateRatio;
+        const centerIndex = Math.floor(sourceIndex);
+        const fraction = sourceIndex - centerIndex;
+
+        let interpolatedSample = 0;
+
+        // Apply Lanczos kernel across 6 samples (3 on each side)
+        for (let j = -lanczosA + 1; j <= lanczosA; j++) {
+          const sampleIndex = centerIndex + j;
+          if (sampleIndex >= 0 && sampleIndex < float32Source.length) {
+            const distance = fraction - j;
+            const sample = float32Source[sampleIndex];
+            if (sample !== undefined) {
+              interpolatedSample += sample * lanczosKernel(distance);
+            }
+          }
+        }
+
+        float32[i] = interpolatedSample;
+      }
+
+      // Create AudioBuffer at the AudioContext's sample rate
+      const audioBuffer = audioContext.createBuffer(1, float32.length, targetSampleRate);
       audioBuffer.getChannelData(0).set(float32);
 
       // Calculate scheduled play time for sequential playback
       const currentTime = audioContext.currentTime;
-      const scheduleTime = Math.max(currentTime, nextPlayTimeRef.current);
 
-      // Track response start time (for viseme synchronization)
+      // Schedule audio playback with lookahead for first chunk to prevent glitches
+      // 400ms scheduling window allows the audio pipeline to fully initialize
+      // Reference: Web Audio API scheduling best practices
+      let scheduleTime: number;
       if (isFirstChunkRef.current) {
+        // First chunk: schedule 400ms ahead for smooth startup
+        // Ensures AudioContext is fully running and pipeline is initialized
+        scheduleTime = Math.max(currentTime + 0.4, nextPlayTimeRef.current);
         responseStartTimeRef.current = scheduleTime;
         isFirstChunkRef.current = false;
+        console.log(`First chunk scheduled at +${((scheduleTime - currentTime) * 1000).toFixed(0)}ms (context state: ${audioContext.state})`);
+      } else {
+        // Subsequent chunks: continuous scheduling for gapless playback
+        scheduleTime = Math.max(currentTime, nextPlayTimeRef.current);
       }
 
       // Create and schedule audio source
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
 
-      // Connect to MediaStreamDestination for visualization OR directly to speakers
-      if (audioStreamDestinationRef.current) {
-        // Voice-only mode: connect to MediaStream, component will play it via <audio> element
-        source.connect(audioStreamDestinationRef.current);
+      // Connect audio source to appropriate destination
+      // Voice-only mode: route through gain node to enable visualization
+      // Fallback: connect directly to audio destination
+      if (audioGainRef.current) {
+        source.connect(audioGainRef.current);
       } else {
-        // Fallback: play directly (shouldn't happen in normal voice-only mode)
         source.connect(audioContext.destination);
       }
 
@@ -268,7 +349,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     } catch (err) {
       console.error('Error playing audio chunk:', err);
     }
-  }, []);
+  }, [forceUpdate]);
 
   /**
    * Handle WebSocket messages
@@ -424,9 +505,11 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
           // Track current response for interruption handling
           if (data.response?.id) {
             currentResponseIdRef.current = data.response.id;
-            // Reset for new response (for viseme sync)
+            // Reset for new response (for viseme sync and audio scheduling)
             isFirstChunkRef.current = true;
             responseStartTimeRef.current = null;
+            // Reset audio scheduling to play immediately
+            nextPlayTimeRef.current = audioContextRef.current?.currentTime || 0;
           }
           break;
 
@@ -456,8 +539,9 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
         case 'response.audio.done':
           // Reset playback scheduling for next response
+          // Use current AudioContext time instead of 0 to avoid scheduling issues
           if (data.response_id === currentResponseIdRef.current) {
-            nextPlayTimeRef.current = 0;
+            nextPlayTimeRef.current = audioContextRef.current?.currentTime || 0;
           }
           break;
 
@@ -553,15 +637,37 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
         console.log(`[${getTimestamp()}] WebSocket connected`);
         setConnectionState('connected');
 
-        // Initialize AudioContext early on connection
+        // Initialize AudioContext early on connection with optimal configuration
         if (!audioContextRef.current) {
-          audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-          console.log(`[${getTimestamp()}] AudioContext created`);
+          audioContextRef.current = new AudioContext({
+            latencyHint: 'interactive',
+          });
+          console.log(`[${getTimestamp()}] AudioContext created with sample rate: ${audioContextRef.current.sampleRate}Hz`);
+          console.log(`[${getTimestamp()}] Base latency: ${(audioContextRef.current.baseLatency * 1000).toFixed(2)}ms`);
+
+          // Create gain node for routing audio to multiple destinations
+          audioGainRef.current = audioContextRef.current.createGain();
+          audioGainRef.current.gain.value = 1.0;
+
+          // Create analyser for visualization
+          audioAnalyserRef.current = audioContextRef.current.createAnalyser();
+          audioAnalyserRef.current.fftSize = 256;
+          audioAnalyserRef.current.smoothingTimeConstant = 0.8;
+
+          // Trigger component re-render to expose audioContext and audioAnalyser
+          forceUpdate({});
         }
 
         // Create MediaStreamDestination only for voice-only mode (not avatar)
-        if (!audioStreamDestinationRef.current && !session?.avatar) {
+        if (!audioStreamDestinationRef.current && !session?.avatar && audioGainRef.current) {
           audioStreamDestinationRef.current = audioContextRef.current.createMediaStreamDestination();
+
+          // Connect gain to both MediaStreamDestination (for playback) and analyser (for visualization)
+          audioGainRef.current.connect(audioStreamDestinationRef.current);
+          if (audioAnalyserRef.current) {
+            audioGainRef.current.connect(audioAnalyserRef.current);
+          }
+
           setAudioStream(audioStreamDestinationRef.current.stream);
           console.log(`[${getTimestamp()}] Audio visualization stream created`);
         }
@@ -683,6 +789,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     videoStream,
     audioStream,
     audioContext: audioContextRef.current,
+    audioAnalyser: audioAnalyserRef.current,
     isReady,
     isMicActive,
     error,

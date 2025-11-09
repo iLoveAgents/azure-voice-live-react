@@ -812,6 +812,9 @@ export interface UseVoiceLiveReturn {
   /** Audio context for visualization and analysis */
   audioContext: AudioContext | null;
 
+  /** Audio analyser node for visualization (pre-configured for frequency analysis) */
+  audioAnalyser: AnalyserNode | null;
+
   /** Whether the session is ready for interaction */
   isReady: boolean;
 

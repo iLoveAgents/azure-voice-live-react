@@ -18,7 +18,7 @@ export function AudioVisualizer(): JSX.Element {
     },
   });
 
-  const { connect, disconnect, connectionState, audioStream, audioContext } = useVoiceLive(config);
+  const { connect, disconnect, connectionState, audioStream, audioAnalyser } = useVoiceLive(config);
 
   // Connect audio stream to audio element for playback
   useEffect(() => {
@@ -28,29 +28,23 @@ export function AudioVisualizer(): JSX.Element {
     }
   }, [audioStream]);
 
-  // Audio visualization
+  // Audio visualization using pre-configured analyser from the hook
   useEffect(() => {
-    if (!audioContext || !audioStream || !canvasRef.current) return;
+    if (!audioAnalyser || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Create analyzer
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 2048;
-    const bufferLength = analyser.frequencyBinCount;
+    // Use the pre-configured analyser - no manual setup needed!
+    const bufferLength = audioAnalyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
-
-    // Connect audio stream to analyser
-    const source = audioContext.createMediaStreamSource(audioStream);
-    source.connect(analyser);
 
     // Draw visualization
     const draw = (): void => {
       animationFrameRef.current = requestAnimationFrame(draw);
 
-      analyser.getByteTimeDomainData(dataArray);
+      audioAnalyser.getByteTimeDomainData(dataArray);
 
       // Clear canvas
       ctx.fillStyle = '#1e1e1e';
@@ -87,9 +81,8 @@ export function AudioVisualizer(): JSX.Element {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      source.disconnect();
     };
-  }, [audioContext, audioStream]);
+  }, [audioAnalyser]);
 
   const handleStart = async (): Promise<void> => {
     try {
