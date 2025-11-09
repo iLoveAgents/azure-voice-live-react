@@ -61,7 +61,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,md}\"",
     "prepublishOnly": "npm run build && npm run type-check && npm run test",
-    "test:pack": "npm pack && npm install -w playground ../*.tgz"
+    "test:pack": "npm pack && cd playground && npm install ../iloveagents-azure-voice-live-react-0.1.0.tgz"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
