@@ -52,6 +52,8 @@ import type {
   UseVoiceLiveReturn,
 } from '../types/voiceLive';
 import { buildSessionConfig, buildAgentSessionConfig } from '../utils/sessionBuilder';
+import { useAudioCapture } from './useAudioCapture';
+import { arrayBufferToBase64 } from '../utils/audioHelpers';
 
 /**
  * Utility to get timestamp for logging
@@ -76,6 +78,9 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     connection,
     session,
     autoConnect = false,
+    autoStartMic = true,
+    audioSampleRate = 24000,
+    audioConstraints,
     onEvent,
     toolExecutor,
   } = config;
@@ -99,6 +104,38 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const eventQueueRef = useRef<any[]>([]);
+
+  // Keep a stable ref for sendEvent to use in audio capture callback
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const sendEventRef = useRef<(event: any) => void>();
+
+  /**
+   * Handle audio data from microphone
+   * Converts to base64 and sends to Voice Live API
+   */
+  const handleAudioData = useCallback((audioData: ArrayBuffer) => {
+    const base64Audio = arrayBufferToBase64(audioData);
+    if (sendEventRef.current) {
+      sendEventRef.current({
+        type: 'input_audio_buffer.append',
+        audio: base64Audio,
+      });
+    }
+  }, []);
+
+  /**
+   * Integrate audio capture for microphone input
+   */
+  const {
+    isCapturing: isMicActive,
+    startCapture: startMic,
+    stopCapture: stopMic,
+  } = useAudioCapture({
+    sampleRate: audioSampleRate,
+    audioConstraints: typeof audioConstraints === 'boolean' ? undefined : audioConstraints,
+    onAudioData: handleAudioData,
+    autoStart: false, // Manual control - we'll start when session is ready
+  });
 
   /**
    * Send an event to the Voice Live API.
@@ -127,6 +164,11 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       console.warn('WebSocket not connected, cannot send event:', event.type);
     }
   }, [isReady]);
+
+  // Keep sendEventRef up to date
+  useEffect(() => {
+    sendEventRef.current = sendEvent;
+  }, [sendEvent]);
 
   /**
    * Update session configuration
@@ -594,6 +636,9 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
   const disconnect = useCallback(() => {
     console.log(`[${getTimestamp()}] Disconnecting...`);
 
+    // Stop microphone capture
+    stopMic();
+
     // Stop any playing audio
     audioQueueRef.current.forEach((source) => {
       try {
@@ -627,7 +672,7 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     setAudioStream(null);
     setIsReady(false);
     setConnectionState('disconnected');
-  }, []);
+  }, [stopMic]);
 
   // Auto-connect if requested
   useEffect(() => {
@@ -635,6 +680,16 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
       connect();
     }
   }, [autoConnect, connect]);
+
+  // Auto-start microphone when session is ready
+  useEffect(() => {
+    if (isReady && autoStartMic && !isMicActive) {
+      console.log(`[${getTimestamp()}] Starting microphone...`);
+      startMic().catch((err) => {
+        console.error(`[${getTimestamp()}] Microphone error:`, err);
+      });
+    }
+  }, [isReady, autoStartMic, isMicActive, startMic]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -661,9 +716,12 @@ export function useVoiceLive(config: UseVoiceLiveConfig): UseVoiceLiveReturn {
     audioStream,
     audioContext: audioContextRef.current,
     isReady,
+    isMicActive,
     error,
     connect,
     disconnect,
+    startMic,
+    stopMic,
     sendEvent,
     updateSession,
     getAudioPlaybackTime,

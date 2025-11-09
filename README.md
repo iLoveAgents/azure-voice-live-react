@@ -16,7 +16,8 @@ Azure Voice Live enables real-time voice conversations with AI models through na
 - **TypeScript First** - Comprehensive type definitions with full IntelliSense support
 - **Production Ready** - Enterprise-grade code with proper error handling and validation
 - **Fluent API** - 25+ composable helper functions for streamlined configuration
-- **React Hooks** - Modern hooks-based architecture (`useVoiceLive`, `useAudioCapture`)
+- **React Hooks** - Modern hooks-based architecture with integrated microphone capture
+- **Zero Config Audio** - Microphone auto-starts when session is ready (no manual coordination)
 - **Avatar Support** - Real-time avatar video with GPU-accelerated chroma key compositing
 - **Audio Enhancements** - Built-in echo cancellation, noise suppression, and semantic VAD
 - **Function Calling** - Complete tool support with async executor pattern
@@ -48,11 +49,10 @@ pnpm add @iloveagents/azure-voice-live-react
 **For Production:**
 
 - **Recommended**: Use backend proxy with Microsoft Entra ID (MSAL) authentication
-- Library includes working proxy implementation ([playground/backend](./playground/backend))
 - Use managed identities for Azure-hosted applications
 - Never expose API keys in client-side code
 
-**See [SECURITY.md](./SECURITY.md) and [playground/backend/README.md](./playground/backend/README.md) for complete security best practices, proxy setup, and production deployment guidance.**
+**See [SECURITY.md](./SECURITY.md) for complete security best practices and production deployment guidance.**
 
 ## Quick Start
 
@@ -62,6 +62,7 @@ pnpm add @iloveagents/azure-voice-live-react
 import { useVoiceLive, VoiceLiveAvatar } from '@iloveagents/azure-voice-live-react';
 
 function VoiceAssistant() {
+  // Microphone automatically starts when session is ready!
   const { videoStream, connect, disconnect, connectionState } = useVoiceLive({
     connection: {
       resourceName: 'your-azure-resource-name',
@@ -89,6 +90,13 @@ function VoiceAssistant() {
 }
 ```
 
+**That's it!** The microphone automatically:
+- Requests permissions when you call `connect()`
+- Starts capturing when the session is ready
+- Stops when you call `disconnect()`
+
+No manual audio coordination needed!
+
 ## Architecture
 
 ### Core Components
@@ -96,8 +104,8 @@ function VoiceAssistant() {
 ```
 @iloveagents/azure-voice-live-react
 ├── Hooks
-│   ├── useVoiceLive()        - Main Voice Live API integration
-│   └── useAudioCapture()     - Microphone capture with AudioWorklet
+│   ├── useVoiceLive()        - Main Voice Live API integration (includes mic capture)
+│   └── useAudioCapture()     - Standalone microphone capture (optional, advanced use)
 ├── Components
 │   └── VoiceLiveAvatar         - Avatar video with chroma key support
 ├── Configuration
@@ -107,6 +115,8 @@ function VoiceAssistant() {
 └── Types
     └── Complete TypeScript definitions for Azure Voice Live API
 ```
+
+**Note**: `useVoiceLive` now includes integrated microphone capture. You typically don't need `useAudioCapture` unless you're building custom audio processing pipelines.
 
 ## Configuration API
 
@@ -215,7 +225,7 @@ const { videoStream, connect } = useVoiceLive({
 
 ### `useVoiceLive(config)` Hook
 
-Main hook for Azure Voice Live API integration.
+Main hook for Azure Voice Live API integration with integrated microphone capture.
 
 **Parameters:**
 
@@ -234,6 +244,11 @@ interface UseVoiceLiveConfig {
 
   // Auto-connect on mount (default: false)
   autoConnect?: boolean;
+
+  // Microphone configuration
+  autoStartMic?: boolean;                       // Auto-start mic when ready (default: true)
+  audioSampleRate?: number;                     // Sample rate (default: 24000)
+  audioConstraints?: MediaTrackConstraints | boolean; // Microphone selection
 
   // Event handler for all Voice Live events
   onEvent?: (event: VoiceLiveEvent) => void;
@@ -254,15 +269,40 @@ interface UseVoiceLiveReturn {
   videoStream: MediaStream | null;      // Avatar video stream (WebRTC)
   audioStream: MediaStream | null;      // Avatar audio stream
 
+  // Microphone state and control
+  isMicActive: boolean;                 // Whether microphone is capturing
+  startMic: () => Promise<void>;        // Manually start microphone
+  stopMic: () => void;                  // Manually stop microphone
+
   // Connection methods
   connect: () => Promise<void>;         // Establish connection
   disconnect: () => void;                // Close connection
 
   // Communication methods
   sendEvent: (event: any) => void;      // Send custom event to API
-  sendText: (text: string) => void;     // Send text message
-  sendAudio: (audio: ArrayBuffer) => void; // Send audio chunk (PCM16)
+  updateSession: (config: Partial<VoiceLiveSessionConfig>) => void; // Update session
 }
+```
+
+**Microphone Control:**
+
+By default, the microphone automatically starts when the session is ready (`autoStartMic: true`). You can:
+
+```typescript
+// Use default auto-start behavior (recommended)
+const { connect, disconnect } = useVoiceLive(config);
+
+// Manual control
+const { connect, startMic, stopMic, isMicActive } = useVoiceLive({
+  ...config,
+  autoStartMic: false, // Disable auto-start
+});
+
+// Select specific microphone device
+const { connect } = useVoiceLive({
+  ...config,
+  audioConstraints: { deviceId: 'specific-device-id' },
+});
 ```
 
 ### `VoiceLiveAvatar` Component
@@ -292,7 +332,9 @@ interface VoiceLiveAvatarProps {
 
 ### `useAudioCapture()` Hook
 
-Hook for capturing microphone audio with AudioWorklet processing.
+**Note**: Microphone capture is now integrated into `useVoiceLive`. You typically don't need this hook unless you're building custom audio processing pipelines.
+
+Hook for standalone microphone audio capture with AudioWorklet processing.
 
 **Parameters:**
 
@@ -318,42 +360,24 @@ interface AudioCaptureReturn {
 }
 ```
 
-**Example:**
+**Advanced Example (Custom Processing):**
 
 ```typescript
-import { useAudioCapture, createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useAudioCapture } from '@iloveagents/azure-voice-live-react';
 
-const { sendEvent } = useVoiceLive(config);
-const { startCapture, stopCapture } = useAudioCapture({
+// Only needed for custom audio processing outside of Voice Live
+const { startCapture, stopCapture, isCapturing } = useAudioCapture({
   sampleRate: 24000,
-  onAudioData: createAudioDataCallback(sendEvent),
+  onAudioData: (audioData) => {
+    // Custom processing logic here
+    processAudioData(audioData);
+  },
 });
 ```
 
 ### Audio Helper Utilities
 
 Convenience helpers for audio processing.
-
-#### `createAudioDataCallback()`
-
-Creates a callback function for `useAudioCapture` that automatically converts audio to base64 and sends it via Voice Live API.
-
-**Usage:**
-
-```typescript
-import { createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-
-const { sendEvent } = useVoiceLive(config);
-const { startCapture } = useAudioCapture({
-  sampleRate: 24000,
-  onAudioData: createAudioDataCallback(sendEvent),
-});
-```
-
-**Benefits:**
-- Automatic safe base64 conversion (prevents stack overflow with large audio buffers)
-- Reduces boilerplate from 5+ lines to 1 line
-- Handles all edge cases internally
 
 #### `arrayBufferToBase64()`
 
@@ -369,6 +393,8 @@ sendEvent({ type: 'input_audio_buffer.append', audio: base64 });
 ```
 
 **Note:** Uses chunked conversion (32KB chunks) to avoid stack overflow from spread operator.
+
+**When to use:** This is only needed for advanced use cases where you're manually processing audio data. For standard usage, microphone capture is integrated into `useVoiceLive` and handles this automatically.
 
 ## Session Configuration
 
@@ -543,7 +569,23 @@ function EventMonitor() {
 
 ## Best Practices
 
-### 1. Use Recommended Defaults
+### 1. Use the Simplified API (Zero Config)
+
+The library now integrates microphone capture directly into `useVoiceLive`:
+
+```typescript
+// ✅ Recommended - Simple and clean
+const { connect, disconnect } = useVoiceLive(config);
+await connect(); // Mic auto-starts when ready!
+
+// ❌ Old way - Manual coordination (no longer needed)
+const { connect, sendEvent } = useVoiceLive(config);
+const { startCapture } = useAudioCapture({ onAudioData: createAudioDataCallback(sendEvent) });
+await connect();
+await startCapture(); // Easy to forget!
+```
+
+### 2. Use Recommended Defaults
 
 The library defaults to optimal settings:
 - **Model**: `gpt-realtime` (GPT-4o Realtime - best quality)
@@ -551,8 +593,9 @@ The library defaults to optimal settings:
 - **Sample Rate**: 24000 Hz (best quality)
 - **Echo Cancellation**: Enabled
 - **Noise Suppression**: Enabled
+- **Auto-start Mic**: Enabled (no manual coordination needed)
 
-### 2. Enable Audio Enhancements
+### 3. Enable Audio Enhancements
 
 For production deployments, always enable audio enhancements:
 
@@ -564,7 +607,7 @@ const enhanceAudio = compose(
 );
 ```
 
-### 3. Use Azure Semantic VAD
+### 4. Use Azure Semantic VAD
 
 Azure Semantic VAD provides superior turn detection compared to simple volume-based detection:
 
@@ -581,7 +624,7 @@ withSemanticVAD({
 })
 ```
 
-### 4. Handle Errors Properly
+### 5. Handle Errors Properly
 
 Implement robust error handling:
 
@@ -594,7 +637,7 @@ onEvent: (event) => {
 }
 ```
 
-### 5. Secure API Keys
+### 6. Secure API Keys
 
 Never expose API keys in client-side code:
 
@@ -609,7 +652,7 @@ const apiKey = process.env.AZURE_VOICE_LIVE_KEY;
 const apiKey = await fetchApiKeyFromBackend();
 ```
 
-### 6. Optimize for Use Case
+### 7. Optimize for Use Case
 
 Configure the session to match your use case using helper functions:
 
@@ -766,11 +809,6 @@ The library includes a comprehensive playground with working examples for all fe
 # Install and start
 npm install
 npm run dev
-
-# Optional: Start backend proxy for secure examples
-cd playground/backend
-npm install
-npm start
 ```
 
 Open <http://localhost:3000> to explore all examples.

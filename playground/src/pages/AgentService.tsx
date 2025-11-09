@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
-import { useAudioCapture , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useAudioCapture } from '@iloveagents/azure-voice-live-react';
 
 export default function AgentServiceProxy(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -80,14 +80,13 @@ export default function AgentServiceProxy(): JSX.Element {
 
     try {
       setConnectionState('connecting');
-      console.log('Connecting to backend proxy...');
 
-      // Connect to backend with token as query parameter
-      const ws = new WebSocket(`${backendProxyUrl}?token=${encodeURIComponent(accessToken)}`);
+      // Connect to backend with token as query parameter (agent mode)
+      const ws = new WebSocket(`${backendProxyUrl}/ws?mode=agent&token=${encodeURIComponent(accessToken)}`);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('Connected to backend proxy');
+        console.log('[Agent] Connected to proxy');
         setConnectionState('connected');
 
         // Initialize AudioContext
@@ -109,7 +108,12 @@ export default function AgentServiceProxy(): JSX.Element {
           }
 
           const message = JSON.parse(data);
-          console.log('Received from Azure:', message.type);
+
+          // Only log important events (not every message)
+          const importantEvents = ['session.created', 'session.updated', 'error', 'conversation.item.input_audio_transcription.completed'];
+          if (importantEvents.includes(message.type)) {
+            console.log(`[Agent] ${message.type}:`, message);
+          }
 
           // Handle audio delta
           if (message.type === 'response.audio.delta' && message.delta) {
@@ -119,7 +123,6 @@ export default function AgentServiceProxy(): JSX.Element {
 
           // Handle session created - send configuration
           if (message.type === 'session.created') {
-            console.log('Session created, configuring...');
             ws.send(JSON.stringify({
               type: 'session.update',
               session: {
@@ -139,14 +142,14 @@ export default function AgentServiceProxy(): JSX.Element {
 
           // Handle session updated - now ready to send audio
           if (message.type === 'session.updated') {
-            console.log('Session configured and ready!');
             setSessionReady(true);
           }
 
-          // Handle other message types as needed
+          // Handle errors from Azure
           if (message.type === 'error') {
-            console.error('Azure error:', message.error);
-            setAuthError(message.error.message);
+            const errorMsg = message.error?.message || message.error?.code || 'Unknown error from Azure';
+            console.error('[Agent] Error:', message);
+            setAuthError(`Azure Error: ${errorMsg}`);
           }
         } catch (error) {
           console.error('Error parsing message:', error);
@@ -160,8 +163,18 @@ export default function AgentServiceProxy(): JSX.Element {
       };
 
       ws.onclose = (event) => {
-        console.log(`WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}`);
+        console.log(`[Agent] WebSocket closed - Code: ${event.code}, Reason: ${event.reason || 'No reason'}`);
         setConnectionState('disconnected');
+        if (!event.wasClean && event.code !== 1000) {
+          // Map common close codes to user-friendly messages
+          const closeMessages: Record<number, string> = {
+            1007: 'Invalid data format or permissions issue',
+            1008: 'Policy violation',
+            1011: 'Server error',
+          };
+          const userMessage = closeMessages[event.code] || `Connection closed unexpectedly (code: ${event.code})`;
+          setAuthError(event.reason || userMessage);
+        }
       };
 
     } catch (error) {
@@ -260,11 +273,12 @@ export default function AgentServiceProxy(): JSX.Element {
 
   const handleStart = async (): Promise<void> => {
     try {
-      console.log('Starting Agent Service connection via proxy...');
+      setAuthError(null); // Clear previous errors
       await connect();
       // Audio capture will start automatically when session is ready
     } catch (err) {
-      console.error('Start error:', err);
+      console.error('[Agent] Start error:', err);
+      setAuthError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -272,7 +286,10 @@ export default function AgentServiceProxy(): JSX.Element {
   useEffect(() => {
     if (sessionReady && connectionState === 'connected' && !isCapturing) {
       startCapture().then(() => {
-        console.log('Mic started after session ready');
+        console.log('[Agent] Microphone started');
+      }).catch((err) => {
+        console.error('[Agent] Mic start failed:', err);
+        setAuthError(`Microphone error: ${err.message}`);
       });
     }
   }, [sessionReady, connectionState, isCapturing, startCapture]);
@@ -347,8 +364,8 @@ export default function AgentServiceProxy(): JSX.Element {
       <div style={{ padding: '1rem', background: '#fff3cd', borderRadius: '4px' }}>
         <h3 style={{ marginTop: 0 }}>Setup Instructions</h3>
         <ol>
-          <li>Start the backend proxy server: <code>cd playground/backend && npm install && npm start</code></li>
-          <li>Configure Azure AD app (already done)</li>
+          <li>Ensure your backend proxy server is running</li>
+          <li>Configure Azure AD app with appropriate scopes</li>
           <li>Sign in and click "Start"</li>
         </ol>
         <p style={{ marginTop: '1rem' }}>

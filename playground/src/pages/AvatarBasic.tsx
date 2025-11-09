@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, withAvatar , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig, withAvatar } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function AvatarBasic() {
@@ -22,12 +22,8 @@ export function AvatarBasic() {
     }),
   });
 
-  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
+  // Voice Live hook - mic capture is integrated and auto-starts!
+  const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
   useEffect(() => {
     if (videoRef.current && videoStream) {
@@ -46,14 +42,12 @@ export function AvatarBasic() {
   const handleStart = async () => {
     try {
       await connect();
-      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
-    await stopCapture();
+  const handleStop = () => {
     disconnect();
   };
 

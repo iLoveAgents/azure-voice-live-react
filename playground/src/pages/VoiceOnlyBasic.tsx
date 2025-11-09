@@ -1,12 +1,13 @@
 import { useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 /**
  * VoiceOnlyBasic - Simple voice chat example
- * 
+ *
  * Demonstrates basic voice-only conversation with Azure Voice Live API.
- * Audio capture automatically starts when the session is ready.
+ * Microphone automatically starts when the session is ready (autoStartMic: true by default).
+ * No need to manually manage audio capture!
  */
 export function VoiceOnlyBasic(): JSX.Element {
   // Create Voice Live configuration
@@ -17,14 +18,8 @@ export function VoiceOnlyBasic(): JSX.Element {
     }
   });
 
-  // Voice Live hook for managing WebSocket connection and audio streaming
-  const { connect, disconnect, connectionState, sendEvent, audioStream } = useVoiceLive(config);
-
-  // Audio capture hook for microphone input (24kHz PCM16)
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
+  // Voice Live hook - mic capture is integrated and auto-starts!
+  const { connect, disconnect, connectionState, audioStream } = useVoiceLive(config);
 
   // Ref for audio playback
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -39,15 +34,15 @@ export function VoiceOnlyBasic(): JSX.Element {
 
   const handleStart = async (): Promise<void> => {
     try {
+      // Just connect - mic will auto-start when session is ready!
       await connect();
-      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
+    // Disconnect also stops the mic automatically
     disconnect();
   };
 

@@ -742,6 +742,41 @@ export interface UseVoiceLiveConfig {
    */
   session?: VoiceLiveSessionConfig;
 
+  // ===== Audio Capture Configuration =====
+
+  /**
+   * Automatically start microphone when session is ready
+   * Set to false if you want manual control over mic start/stop
+   * @default true
+   */
+  autoStartMic?: boolean;
+
+  /**
+   * Audio sample rate for microphone capture
+   * Must match session.inputAudioSamplingRate
+   * @default 24000
+   */
+  audioSampleRate?: number;
+
+  /**
+   * Audio constraints for microphone selection
+   * Use to specify which microphone device to use
+   *
+   * @example
+   * ```ts
+   * // Use specific device
+   * audioConstraints: { deviceId: 'device-id-here' }
+   *
+   * // Request echo cancellation, noise suppression
+   * audioConstraints: {
+   *   echoCancellation: true,
+   *   noiseSuppression: true,
+   *   autoGainControl: true
+   * }
+   * ```
+   */
+  audioConstraints?: MediaTrackConstraints | boolean;
+
   // ===== Lifecycle & Handlers =====
 
   /**
@@ -780,6 +815,9 @@ export interface UseVoiceLiveReturn {
   /** Whether the session is ready for interaction */
   isReady: boolean;
 
+  /** Whether microphone is currently active */
+  isMicActive: boolean;
+
   /** Error message if any */
   error: string | null;
 
@@ -788,6 +826,12 @@ export interface UseVoiceLiveReturn {
 
   /** Disconnect from Voice Live API */
   disconnect: () => void;
+
+  /** Start microphone capture (for manual control) */
+  startMic: () => Promise<void>;
+
+  /** Stop microphone capture (for manual control) */
+  stopMic: () => void;
 
   /** Send an event to the API */
   sendEvent: (event: any) => void;
