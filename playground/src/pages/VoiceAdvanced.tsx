@@ -1,9 +1,10 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ConfigItem, ErrorPanel } from '../components';
 
 export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Advanced configuration with all major options
   const config = createVoiceLiveConfig({
@@ -62,9 +63,12 @@ export function VoiceAdvanced(): JSX.Element {
 
   const handleStart = async (): Promise<void> => {
     try {
+      setError(null);
       await connect();
       await startCapture();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
@@ -72,37 +76,56 @@ export function VoiceAdvanced(): JSX.Element {
   const handleStop = async (): Promise<void> => {
     await stopCapture();
     disconnect();
+    setError(null);
   };
 
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Voice Chat - Advanced Config</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Advanced Voice Chat"
+      description="Advanced VAD configuration with echo cancellation, noise suppression, filler word removal, and barge-in support."
+    >
+      <ErrorPanel error={error} />
 
-      <div className="button-group">
-        <button onClick={handleStart} disabled={isConnected}>
-          Start
-        </button>
-        <button onClick={handleStop} disabled={!isConnected}>
-          Stop
-        </button>
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div className="config-panel">
-        <h3>Configuration</h3>
-        <ul className="config-list">
-          <li><strong>Voice:</strong> HD Voice (en-US-Ava:DragonHDLatestNeural) with temperature 0.9, rate 1.1x</li>
-          <li><strong>Turn Detection:</strong> Azure Semantic VAD with filler word removal</li>
-          <li><strong>Barge-in:</strong> Enabled with auto-truncate</li>
-          <li><strong>Audio Quality:</strong> 24kHz with echo cancellation and deep noise suppression</li>
-          <li><strong>Temperature:</strong> 0.8 (creative responses)</li>
+      <Section>
+        <ControlGroup>
+          <button onClick={handleStart} disabled={isConnected}>
+            Start Conversation
+          </button>
+          <button onClick={handleStop} disabled={!isConnected}>
+            Stop
+          </button>
+        </ControlGroup>
+      </Section>
+
+      <ConfigPanel title="Active Configuration">
+        <ConfigItem label="Voice" value="en-US-Ava:DragonHDLatestNeural (HD)" />
+        <ConfigItem label="Voice Temperature" value="0.9" />
+        <ConfigItem label="Voice Rate" value="1.1x" />
+        <ConfigItem label="Turn Detection" value="Azure Semantic VAD" />
+        <ConfigItem label="Filler Word Removal" value="Enabled (removes 'um', 'uh', etc.)" />
+        <ConfigItem label="Barge-in" value="Enabled with auto-truncate" />
+        <ConfigItem label="Audio Sampling" value="24kHz" />
+        <ConfigItem label="Echo Cancellation" value="Server-side" />
+        <ConfigItem label="Noise Suppression" value="Azure Deep Noise Suppression" />
+        <ConfigItem label="Response Temperature" value="0.8" />
+      </ConfigPanel>
+
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Features Demonstrated</h3>
+        <ul style={{ fontSize: '14px', color: '#666', lineHeight: '1.8', marginLeft: '20px' }}>
+          <li><strong>Azure Semantic VAD:</strong> Advanced voice activity detection with semantic understanding</li>
+          <li><strong>Filler Word Removal:</strong> Automatically removes hesitation sounds for cleaner input</li>
+          <li><strong>Barge-in Support:</strong> Interrupt the assistant mid-response with auto-truncation</li>
+          <li><strong>High-Quality Audio:</strong> 24kHz sampling with echo cancellation and deep noise suppression</li>
+          <li><strong>Manual Audio Capture:</strong> Direct control over microphone with useAudioCapture hook</li>
         </ul>
-      </div>
+      </Section>
 
       <audio ref={audioRef} autoPlay hidden />
-    </div>
+    </SampleLayout>
   );
 }

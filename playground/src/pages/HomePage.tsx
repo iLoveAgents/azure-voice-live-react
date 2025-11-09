@@ -1,43 +1,240 @@
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
+
+interface SampleInfo {
+  path: string;
+  title: string;
+  description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
+  features: string[];
+}
+
+const samples: Record<string, SampleInfo[]> = {
+  'Voice Examples': [
+    {
+      path: '/voice-basic',
+      title: 'Basic Voice Chat',
+      description: 'Simple voice conversation with auto-start microphone and minimal configuration',
+      difficulty: 'Beginner',
+      features: ['Auto-start', 'Basic setup']
+    },
+    {
+      path: '/voice-advanced',
+      title: 'Advanced Voice Chat',
+      description: 'Advanced VAD configuration with echo cancellation, noise suppression, and filler word removal',
+      difficulty: 'Intermediate',
+      features: ['Azure Semantic VAD', 'Echo cancellation', 'Noise suppression', 'Barge-in']
+    },
+    {
+      path: '/voice-proxy',
+      title: 'Voice with Proxy',
+      description: 'Secure proxy mode with API key stored in backend instead of client',
+      difficulty: 'Intermediate',
+      features: ['Secure proxy', 'Backend auth']
+    },
+    {
+      path: '/voice-proxy-msal',
+      title: 'Voice with MSAL Auth',
+      description: 'MSAL authentication integration with token acquisition and refresh',
+      difficulty: 'Advanced',
+      features: ['MSAL', 'Token auth', 'Sign-in flow']
+    }
+  ],
+  'Avatar Examples': [
+    {
+      path: '/avatar-basic',
+      title: 'Basic Avatar',
+      description: 'Simple avatar with video stream rendering and character configuration',
+      difficulty: 'Beginner',
+      features: ['Video render', 'Character: lisa', 'H.264 codec']
+    },
+    {
+      path: '/avatar-advanced',
+      title: 'Advanced Avatar',
+      description: 'High-resolution avatar with transparent background removal and advanced VAD',
+      difficulty: 'Intermediate',
+      features: ['Chroma key', '1080p video', 'Transparent background', 'Semantic VAD']
+    },
+    {
+      path: '/avatar-proxy',
+      title: 'Avatar with Proxy',
+      description: 'Secure proxy mode for avatar with environment-based configuration',
+      difficulty: 'Intermediate',
+      features: ['Secure proxy', 'Backend auth']
+    },
+    {
+      path: '/avatar-proxy-msal',
+      title: 'Avatar with MSAL Auth',
+      description: 'Avatar with MSAL authentication and manual audio capture',
+      difficulty: 'Advanced',
+      features: ['MSAL', 'Manual audio capture', 'Token auth']
+    }
+  ],
+  'Agent Service': [
+    {
+      path: '/agent-service',
+      title: 'Agent Service (Voice)',
+      description: 'Full backend agent service with MSAL auth, event logging, and Whisper transcription',
+      difficulty: 'Expert',
+      features: ['Backend proxy', 'MSAL', 'Event logging', 'Whisper', 'PCM16 audio']
+    },
+    {
+      path: '/agent-service-avatar',
+      title: 'Agent Service (Avatar)',
+      description: 'Complete agent service with avatar integration and all advanced features',
+      difficulty: 'Expert',
+      features: ['Video + Agent', 'Full backend', 'MSAL', 'Event logs']
+    }
+  ],
+  'Advanced Features': [
+    {
+      path: '/function-calling',
+      title: 'Function Calling',
+      description: 'Tool/function definition system with custom get_weather and get_time tools',
+      difficulty: 'Intermediate',
+      features: ['Tool calls', 'Function execution', 'Event logging']
+    },
+    {
+      path: '/audio-visualizer',
+      title: 'Audio Visualizer',
+      description: 'Real-time audio waveform visualization using Canvas and FFT analysis',
+      difficulty: 'Intermediate',
+      features: ['Canvas', 'FFT analysis', 'Waveform', 'Animation']
+    },
+    {
+      path: '/viseme',
+      title: 'Viseme Data',
+      description: 'Capture viseme data for custom avatar mouth shapes (works with Standard voices only)',
+      difficulty: 'Advanced',
+      features: ['22 viseme types', 'Audio sync', 'Standard voices only']
+    }
+  ]
+};
+
+const difficultyColors: Record<string, { bg: string; text: string }> = {
+  Beginner: { bg: '#e8f5e9', text: '#2e7d32' },
+  Intermediate: { bg: '#fff4e5', text: '#e67700' },
+  Advanced: { bg: '#fff3e0', text: '#d84315' },
+  Expert: { bg: '#f3e5f5', text: '#6a1b9a' }
+};
+
+function SampleCard({ sample }: { sample: SampleInfo }) {
+  const diffColor = difficultyColors[sample.difficulty];
+
+  return (
+    <Link
+      to={sample.path}
+      style={{
+        display: 'block',
+        backgroundColor: 'white',
+        border: '1px solid #e0e0e0',
+        borderRadius: '8px',
+        padding: '20px',
+        marginBottom: '16px',
+        textDecoration: 'none',
+        color: 'inherit',
+        transition: 'all 0.2s ease',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = '#0078d4';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 120, 212, 0.1)';
+        e.currentTarget.style.transform = 'translateY(-2px)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = '#e0e0e0';
+        e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)';
+        e.currentTarget.style.transform = 'translateY(0)';
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#0078d4' }}>
+          {sample.title}
+        </h3>
+        <span style={{
+          display: 'inline-block',
+          padding: '4px 12px',
+          borderRadius: '12px',
+          fontSize: '12px',
+          fontWeight: 500,
+          backgroundColor: diffColor.bg,
+          color: diffColor.text,
+          whiteSpace: 'nowrap',
+          marginLeft: '12px'
+        }}>
+          {sample.difficulty}
+        </span>
+      </div>
+      <p style={{ margin: '8px 0 12px 0', fontSize: '14px', color: '#666', lineHeight: '1.5' }}>
+        {sample.description}
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {sample.features.map((feature, idx) => (
+          <span
+            key={idx}
+            style={{
+              display: 'inline-block',
+              padding: '3px 10px',
+              borderRadius: '4px',
+              fontSize: '12px',
+              backgroundColor: '#f5f5f5',
+              color: '#555',
+              border: '1px solid #e0e0e0'
+            }}
+          >
+            {feature}
+          </span>
+        ))}
+      </div>
+    </Link>
+  );
+}
 
 export function HomePage() {
   return (
-    <div>
-      <h1>Azure Voice Live React - Examples</h1>
-      <p>Simple examples for Azure AI Voice Live API</p>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px' }}>
+      <header style={{ marginBottom: '48px' }}>
+        <h1 style={{ margin: '0 0 8px 0', fontSize: '36px', fontWeight: 700, color: '#333' }}>
+          Azure Voice Live React
+        </h1>
+        <p style={{ margin: 0, fontSize: '18px', color: '#666', lineHeight: '1.6' }}>
+          Developer samples and reference implementations for the Azure AI Voice Live API
+        </p>
+      </header>
 
-      <h2 style={{ marginTop: '30px' }}>Voice Examples</h2>
-      <ul>
-        <li><Link to="/voice-basic">Voice Chat - Simple</Link></li>
-        <li><Link to="/voice-advanced">Voice Chat - Advanced Config</Link></li>
-        <li><Link to="/voice-proxy">Voice Chat - Secure Proxy [no auth]</Link></li>
-        <li><Link to="/voice-proxy-msal">Voice Chat - Secure Proxy [MSAL]</Link></li>
-      </ul>
+      {Object.entries(samples).map(([category, categoryItems]) => (
+        <section key={category} style={{ marginBottom: '48px' }}>
+          <h2 style={{
+            margin: '0 0 20px 0',
+            fontSize: '24px',
+            fontWeight: 600,
+            color: '#333',
+            paddingBottom: '12px',
+            borderBottom: '2px solid #0078d4'
+          }}>
+            {category}
+          </h2>
+          <div>
+            {categoryItems.map((sample) => (
+              <SampleCard key={sample.path} sample={sample} />
+            ))}
+          </div>
+        </section>
+      ))}
 
-      <h2 style={{ marginTop: '30px' }}>Avatar Examples</h2>
-      <ul>
-        <li><Link to="/avatar-basic">Avatar - Simple</Link></li>
-        <li><Link to="/avatar-advanced">Avatar - Advanced</Link></li>
-        <li><Link to="/avatar-proxy">Avatar - Secure Proxy [no auth]</Link></li>
-        <li><Link to="/avatar-proxy-msal">Avatar - Secure Proxy [MSAL]</Link></li>
-      </ul>
-
-      <h2 style={{ marginTop: '30px' }}>Agent Service</h2>
-      <ul>
-        <li><Link to="/agent-service">Agent Service - Voice Only</Link></li>
-        <li><Link to="/agent-service-avatar">Agent Service - with Avatar</Link></li>
-      </ul>
-
-      <h2 style={{ marginTop: '30px' }}>Advanced Features</h2>
-      <ul>
-        <li><Link to="/function-calling">Function Calling</Link></li>
-        <li><Link to="/audio-visualizer">Audio Visualizer</Link></li>
-        <li><Link to="/viseme">Viseme for Custom Avatar</Link></li>
-      </ul>
-
-      <footer style={{ marginTop: '50px', padding: '20px 0', borderTop: '1px solid #ddd', fontSize: '14px', color: '#666' }}>
-        <p>
-          <a href="https://iloveagents.ai" target="_blank" rel="noopener noreferrer" style={{ color: '#0078d4', textDecoration: 'none' }}>
+      <footer style={{
+        marginTop: '64px',
+        padding: '24px 0',
+        borderTop: '1px solid #e0e0e0',
+        textAlign: 'center'
+      }}>
+        <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+          Built with{' '}
+          <a
+            href="https://iloveagents.ai"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#0078d4', textDecoration: 'none', fontWeight: 500 }}
+          >
             iLoveAgents.ai
           </a>
         </p>

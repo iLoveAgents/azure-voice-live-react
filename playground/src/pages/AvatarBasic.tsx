@@ -1,10 +1,11 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, createVoiceLiveConfig, withAvatar } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ConfigItem, ErrorPanel } from '../components';
 
 export function AvatarBasic() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const config = createVoiceLiveConfig({
     connection: {
@@ -41,47 +42,72 @@ export function AvatarBasic() {
 
   const handleStart = async () => {
     try {
+      setError(null);
       await connect();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
   const handleStop = () => {
     disconnect();
+    setError(null);
   };
 
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Avatar - Simple</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Basic Avatar"
+      description="Simple avatar with video stream rendering and character configuration. The microphone auto-starts when ready."
+    >
+      <ErrorPanel error={error} />
 
-      <div style={{ marginTop: '20px' }}>
-        <button onClick={handleStart} disabled={isConnected}>
-          Start
-        </button>
-        <button onClick={handleStop} disabled={!isConnected}>
-          Stop
-        </button>
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div style={{ marginTop: '30px' }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          style={{
-            width: '100%',
-            maxWidth: '600px',
-            borderRadius: '8px',
-            border: '1px solid #ddd',
-          }}
-        />
+      <Section>
+        <ControlGroup>
+          <button onClick={handleStart} disabled={isConnected}>
+            Start Avatar
+          </button>
+          <button onClick={handleStop} disabled={!isConnected}>
+            Stop
+          </button>
+        </ControlGroup>
+      </Section>
+
+      <ConfigPanel title="Avatar Configuration">
+        <ConfigItem label="Character" value="lisa" />
+        <ConfigItem label="Style" value="casual-sitting" />
+        <ConfigItem label="Codec" value="H.264" />
+        <ConfigItem label="Voice" value="en-US-Ava:DragonHDLatestNeural" />
+      </ConfigPanel>
+
+      <Section title="Video Stream">
+        <div style={{
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+          padding: '20px',
+          display: 'flex',
+          justifyContent: 'center'
+        }}>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{
+              width: '100%',
+              maxWidth: '600px',
+              borderRadius: '8px',
+              border: '1px solid #ddd',
+              backgroundColor: '#000'
+            }}
+          />
+        </div>
         <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-      </div>
-    </div>
+      </Section>
+    </SampleLayout>
   );
 }

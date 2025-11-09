@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { useVoiceLive, VoiceLiveAvatar, createVoiceLiveConfig, withTransparentBackground } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ConfigItem, ErrorPanel } from '../components';
 
 export function AvatarAdvanced() {
+  const [error, setError] = useState<string | null>(null);
+
   const config = createVoiceLiveConfig({
     connection: {
       resourceName: import.meta.env.VITE_AZURE_AI_FOUNDRY_RESOURCE,
@@ -43,43 +46,91 @@ export function AvatarAdvanced() {
   const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
   const handleStart = async () => {
-    console.log('Starting...');
     try {
+      setError(null);
       await connect();
-      console.log('Connected - mic will auto-start when session ready');
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
   const handleStop = () => {
     disconnect();
+    setError(null);
   };
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Avatar - Advanced</h1>
-      <p>Status: {connectionState}</p>
-      <p style={{ fontSize: '14px', color: '#666' }}>
-        With background removal, semantic VAD, and noise suppression.
-      </p>
+    <SampleLayout
+      title="Advanced Avatar"
+      description="High-resolution avatar with transparent background removal (chroma key), semantic VAD, barge-in, and advanced audio processing."
+    >
+      <ErrorPanel error={error} />
 
-      <div style={{
-        width: '800px',
-        height: '450px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        marginTop: '20px',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }}>
-        {videoStream && <VoiceLiveAvatar videoStream={videoStream} audioStream={audioStream} enableChromaKey style={{ width: '100%', height: '100%' }} />}
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div style={{ marginTop: '20px' }}>
-        <button onClick={handleStart} disabled={connectionState === 'connected'}>Start</button>
-        <button onClick={handleStop} disabled={connectionState !== 'connected'}>Stop</button>
-      </div>
-    </div>
+      <Section>
+        <ControlGroup>
+          <button onClick={handleStart} disabled={connectionState === 'connected'}>
+            Start Avatar
+          </button>
+          <button onClick={handleStop} disabled={connectionState !== 'connected'}>
+            Stop
+          </button>
+        </ControlGroup>
+      </Section>
+
+      <ConfigPanel title="Advanced Configuration">
+        <ConfigItem label="Resolution" value="1920x1080 (Full HD)" />
+        <ConfigItem label="Bitrate" value="2 Mbps" />
+        <ConfigItem label="Background" value="Transparent (Chroma Key)" />
+        <ConfigItem label="Voice" value="en-US-Ava:DragonHDLatestNeural" />
+        <ConfigItem label="Voice Temperature" value="0.9" />
+        <ConfigItem label="Voice Rate" value="0.95x" />
+        <ConfigItem label="Turn Detection" value="Azure Semantic VAD" />
+        <ConfigItem label="Barge-in" value="Enabled with auto-truncate" />
+        <ConfigItem label="Filler Word Removal" value="Enabled" />
+        <ConfigItem label="Noise Suppression" value="Azure Deep Noise Suppression" />
+        <ConfigItem label="Echo Cancellation" value="Server-side" />
+      </ConfigPanel>
+
+      <Section title="Avatar Video (Transparent Background)">
+        <div style={{
+          width: '100%',
+          maxWidth: '800px',
+          height: '450px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          borderRadius: '8px',
+          overflow: 'hidden',
+          margin: '0 auto',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          {videoStream ? (
+            <VoiceLiveAvatar
+              videoStream={videoStream}
+              audioStream={audioStream}
+              enableChromaKey
+              style={{ width: '100%', height: '100%' }}
+            />
+          ) : (
+            <p style={{ color: 'white', fontSize: '14px' }}>Avatar will appear here when connected</p>
+          )}
+        </div>
+      </Section>
+
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Features Demonstrated</h3>
+        <ul style={{ fontSize: '14px', color: '#666', lineHeight: '1.8', marginLeft: '20px' }}>
+          <li><strong>VoiceLiveAvatar Component:</strong> Specialized UI wrapper for avatar rendering</li>
+          <li><strong>Chroma Key Background Removal:</strong> Transparent background for custom styling</li>
+          <li><strong>High-Resolution Video:</strong> Full HD (1920x1080) at 2Mbps bitrate</li>
+          <li><strong>Azure Semantic VAD:</strong> Advanced voice activity detection</li>
+          <li><strong>Custom Background:</strong> Gradient background showing transparency</li>
+        </ul>
+      </Section>
+    </SampleLayout>
   );
 }
