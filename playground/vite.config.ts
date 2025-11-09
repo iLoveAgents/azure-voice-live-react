@@ -9,7 +9,7 @@ const isDist = process.env.VITE_MODE === 'dist';
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 3001,
   },
   resolve: {
     alias: isDist

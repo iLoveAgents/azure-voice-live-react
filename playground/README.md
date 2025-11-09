@@ -18,7 +18,7 @@ cp .env.example .env
 npm run dev
 ```
 
-3. Open <http://localhost:3000> - credentials auto-loaded from `.env`!
+3. Open <http://localhost:3001> - credentials auto-loaded from `.env`!
 
 ## Purpose
 

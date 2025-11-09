@@ -12,7 +12,7 @@ npm install
 npm run dev
 ```
 
-Open <http://localhost:3000> and enter your Azure credentials to test.
+Open <http://localhost:3001> and enter your Azure credentials to test.
 
 ### Optional: Start Backend Proxy
 
