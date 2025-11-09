@@ -1,9 +1,10 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function FunctionCalling() {
   const [logs, setLogs] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const addLog = (message: string) => {
     setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${message}`]);
@@ -127,62 +128,97 @@ export function FunctionCalling() {
   const handleStart = async () => {
     addLog('Starting...');
     try {
+      setError(null);
       await connect();
       addLog('Connected - mic will auto-start');
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       addLog(`Error: ${err}`);
     }
   };
 
   const handleStop = () => {
     disconnect();
+    setError(null);
     addLog('Stopped');
   };
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Function Calling Example</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Function Calling"
+      description="Tool/function definition system with custom tools. Ask about weather or time to see functions in action."
+    >
+      <ErrorPanel error={error} />
 
-      <div>
-        <button onClick={handleStart} disabled={connectionState === 'connected'}>Start</button>
-        <button onClick={handleStop} disabled={connectionState !== 'connected'}>Stop</button>
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Available Tools</h2>
-        <ul>
-          <li><strong>get_weather</strong> - Get weather for a location</li>
-          <li><strong>get_time</strong> - Get current time</li>
-        </ul>
+      <Section>
+        <ControlGroup>
+          <button onClick={handleStart} disabled={connectionState === 'connected'}>
+            Start Conversation
+          </button>
+          <button onClick={handleStop} disabled={connectionState !== 'connected'}>
+            Stop
+          </button>
+        </ControlGroup>
+      </Section>
 
-        <p style={{ marginTop: '20px' }}>
-          <strong>Try saying:</strong> "What's the weather in London?" or "What time is it?"
-        </p>
-      </div>
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Available Tools</h3>
+        <div style={{ marginBottom: '12px' }}>
+          <strong style={{ display: 'block', marginBottom: '4px' }}>get_weather</strong>
+          <span style={{ fontSize: '13px', color: '#666' }}>
+            Get weather for a location. Parameters: location (required), unit (optional: celsius/fahrenheit)
+          </span>
+        </div>
+        <div>
+          <strong style={{ display: 'block', marginBottom: '4px' }}>get_time</strong>
+          <span style={{ fontSize: '13px', color: '#666' }}>
+            Get current time and timezone. No parameters required.
+          </span>
+        </div>
+      </Section>
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Tool Call Logs</h2>
+      <Section>
+        <div style={{
+          backgroundColor: '#f8f9fa',
+          border: '1px solid #e0e0e0',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '24px'
+        }}>
+          <strong style={{ display: 'block', marginBottom: '8px', fontSize: '14px' }}>Try saying:</strong>
+          <ul style={{ marginLeft: '20px', fontSize: '14px', color: '#666', lineHeight: '1.8' }}>
+            <li>"What's the weather in London?"</li>
+            <li>"What time is it?"</li>
+            <li>"Tell me the weather in Tokyo in fahrenheit"</li>
+          </ul>
+        </div>
+      </Section>
+
+      <Section title="Tool Call Logs">
         <div style={{
           background: '#1e1e1e',
           color: '#d4d4d4',
-          padding: '15px',
-          borderRadius: '6px',
-          maxHeight: '300px',
+          padding: '20px',
+          borderRadius: '8px',
+          maxHeight: '400px',
           overflow: 'auto',
           fontFamily: 'monospace',
           fontSize: '13px',
+          lineHeight: '1.6',
+          border: '1px solid #333'
         }}>
           {logs.length === 0 ? (
-            <div style={{ color: '#888' }}>No tool calls yet...</div>
+            <div style={{ color: '#888' }}>No tool calls yet. Start the conversation and ask about weather or time!</div>
           ) : (
-            logs.map((log, i) => <div key={i}>{log}</div>)
+            logs.map((log, i) => <div key={i} style={{ marginBottom: '4px' }}>{log}</div>)
           )}
         </div>
-      </div>
+      </Section>
 
       <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
+    </SampleLayout>
   );
 }

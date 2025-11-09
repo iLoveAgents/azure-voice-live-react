@@ -1,22 +1,23 @@
 import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 
-export function VoiceProxyMSAL() {
+export function VoiceProxyMSAL(): JSX.Element {
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
   const { instance, accounts } = useMsal();
 
-  const acquireToken = async () => {
+  const acquireToken = async (): Promise<void> => {
     if (accounts.length === 0) {
       try {
         setAuthError(null);
         await instance.loginPopup({
-          scopes: ['https://cognitiveservices.azure.com/.default'],
+          scopes: ['https://cognitiveservices.azure.com/.default'], // Azure Cognitive Services scope
         });
       } catch (error) {
         console.error('Sign-in error:', error);
@@ -80,58 +81,78 @@ export function VoiceProxyMSAL() {
     }
   }, [audioStream]);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     if (!wsUrl) {
-      alert('Waiting for authentication token...');
+      setError('Waiting for authentication token...');
       return;
     }
 
     console.log('Starting...');
     try {
+      setError(null);
       await connect();
       console.log('Connected - mic will auto-start when session ready');
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = () => {
+  const handleStop = (): void => {
     disconnect();
+    setError(null);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = (): void => {
     instance.logoutPopup();
     setAccessToken(null);
     setWsUrl(null);
+    setAuthError(null);
   };
 
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Voice Chat - Secure Proxy (MSAL)</h1>
+    <SampleLayout
+      title="Voice Chat - Secure Proxy (MSAL)"
+      description="Voice conversation using Microsoft Authentication Library (MSAL) with Entra ID authentication."
+    >
+      <ErrorPanel error={error || authError} />
 
-      {accounts.length === 0 ? (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Not signed in</p>
-          <button onClick={acquireToken}>Sign In</button>
-        </div>
-      ) : (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Signed in as: {accounts[0].username}</p>
-          <p>Token: {accessToken ? '✓' : '✗'}</p>
-          <button onClick={handleSignOut} style={{ marginBottom: '0.5rem' }}>Sign Out</button>
-        </div>
-      )}
+      <Section>
+        {accounts.length === 0 ? (
+          <div>
+            <p style={{ marginBottom: '12px', color: '#666' }}>Not signed in. Please authenticate to continue.</p>
+            <button onClick={acquireToken}>Sign In with Microsoft</button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ marginBottom: '12px' }}>
+              <p style={{ fontSize: '14px', color: '#666', marginBottom: '4px' }}>
+                <strong>Signed in as:</strong> {accounts[0].username}
+              </p>
+              <p style={{ fontSize: '14px', color: '#666' }}>
+                <strong>Token Status:</strong> {accessToken ? '✓ Active' : '✗ Not acquired'}
+              </p>
+            </div>
+            <button onClick={handleSignOut}>Sign Out</button>
+          </div>
+        )}
+      </Section>
 
-      {authError && <p style={{ color: '#c62828' }}>{authError}</p>}
-      <p>Status: {connectionState}</p>
-      <div>
-        <button onClick={handleStart} disabled={isConnected || !wsUrl}>Start</button>
-        <button onClick={handleStop} disabled={!isConnected}>Stop</button>
-      </div>
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
+      <StatusBadge status={connectionState} />
+
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected || !wsUrl}>
+          Start Conversation
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
+      <audio ref={audioRef} autoPlay hidden />
+    </SampleLayout>
   );
 }

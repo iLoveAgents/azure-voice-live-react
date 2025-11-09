@@ -1,9 +1,10 @@
-import { useRef, useEffect } from 'react';
-import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { useRef, useEffect, useState } from 'react';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Advanced configuration with all major options
   const config = createVoiceLiveConfig({
@@ -57,45 +58,41 @@ export function VoiceAdvanced(): JSX.Element {
 
   const handleStart = async (): Promise<void> => {
     try {
+      setError(null);
       await connect();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
   const handleStop = (): void => {
     disconnect();
+    setError(null);
   };
 
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Voice Chat - Advanced Config</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Advanced Voice Chat"
+      description="Advanced VAD configuration with echo cancellation, noise suppression, filler word removal, and barge-in support."
+    >
+      <ErrorPanel error={error} />
 
-      <div className="button-group">
+      <StatusBadge status={connectionState} />
+
+      <ControlGroup>
         <button onClick={handleStart} disabled={isConnected}>
-          Start
+          Start Conversation
         </button>
         <button onClick={handleStop} disabled={!isConnected}>
           Stop
         </button>
-      </div>
-
-      <div className="config-panel">
-        <h3>Configuration</h3>
-        <ul className="config-list">
-          <li><strong>Voice:</strong> HD Voice (en-US-Ava:DragonHDLatestNeural) with temperature 0.9, rate 1.1x</li>
-          <li><strong>Turn Detection:</strong> Azure Semantic VAD with filler word removal</li>
-          <li><strong>Barge-in:</strong> Enabled with auto-truncate</li>
-          <li><strong>Audio Quality:</strong> 24kHz with echo cancellation and deep noise suppression</li>
-          <li><strong>Temperature:</strong> 0.8 (creative responses)</li>
-        </ul>
-      </div>
+      </ControlGroup>
 
       <audio ref={audioRef} autoPlay hidden />
-    </div>
+    </SampleLayout>
   );
 }

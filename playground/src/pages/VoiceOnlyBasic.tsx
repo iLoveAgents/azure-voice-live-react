@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, ControlGroup, ErrorPanel } from '../components';
 
 /**
  * VoiceOnlyBasic - Simple voice chat example
@@ -10,6 +10,8 @@ import { Link } from 'react-router-dom';
  * No need to manually manage audio capture!
  */
 export function VoiceOnlyBasic(): JSX.Element {
+  const [error, setError] = useState<string | null>(null);
+
   // Create Voice Live configuration
   const config = createVoiceLiveConfig({
     connection: {
@@ -34,31 +36,42 @@ export function VoiceOnlyBasic(): JSX.Element {
 
   const handleStart = async (): Promise<void> => {
     try {
-      // Just connect - mic will auto-start when session is ready!
+      setError(null);
       await connect();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
   const handleStop = (): void => {
-    // Disconnect also stops the mic automatically
     disconnect();
+    setError(null);
   };
 
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Voice Chat - Simple</h1>
-      <p>Status: {connectionState}</p>
-      <div>
-        <button onClick={handleStart} disabled={isConnected}>Start</button>
-        <button onClick={handleStop} disabled={!isConnected}>Stop</button>
-      </div>
+    <SampleLayout
+      title="Basic Voice Chat"
+      description="Simple voice conversation with auto-start microphone and minimal configuration."
+    >
+      <ErrorPanel error={error} />
+
+      <StatusBadge status={connectionState} />
+
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected}>
+          Start Conversation
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
       {/* Hidden audio element for playing assistant responses */}
       <audio ref={audioRef} autoPlay hidden />
-    </div>
+    </SampleLayout>
   );
 }

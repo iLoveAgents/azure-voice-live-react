@@ -1,15 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useVoiceLive, createVoiceLiveConfig, withViseme } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, withViseme , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 interface VisemeData {
   viseme_id: number;
   audio_offset_ms: number;
 }
 
-export function VisemeExample() {
+export function VisemeExample(): JSX.Element {
   const [currentViseme, setCurrentViseme] = useState<number | null>(null);
   const [visemeHistory, setVisemeHistory] = useState<Array<{viseme: number, offset: number}>>([]);
+  const [error, setError] = useState<string | null>(null);
   const visemeBufferRef = useRef<VisemeData[]>([]);
   const animationFrameRef = useRef<number>();
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -91,17 +92,22 @@ export function VisemeExample() {
     };
   }, [getAudioPlaybackTime, currentViseme]);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     try {
+      setError(null);
       await connect();
       setVisemeHistory([]);
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = () => {
+  const handleStop = async (): Promise<void> => {
+    await stopCapture();
     disconnect();
+    setError(null);
   };
 
   // Viseme to mouth shape mapping (simplified)
@@ -133,19 +139,28 @@ export function VisemeExample() {
     return visemes[id] || 'Unknown';
   };
 
+  const isConnected = connectionState === 'connected';
+
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Viseme for Custom Avatar</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Viseme Data for Custom Avatars"
+      description="Demonstrates real-time viseme (mouth shape) data synchronized with audio playback. Only works with Azure Standard voices."
+    >
+      <ErrorPanel error={error} />
 
-      <div style={{ marginTop: '20px' }}>
-        <button onClick={handleStart} disabled={connectionState === 'connected'}>Start</button>
-        <button onClick={handleStop} disabled={connectionState !== 'connected'}>Stop</button>
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Current Viseme</h2>
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected}>
+          Start Conversation
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Current Viseme</h3>
         <div style={{
           background: '#f5f5f5',
           padding: '40px',
@@ -170,10 +185,10 @@ export function VisemeExample() {
             <div style={{ color: '#999' }}>No viseme data yet...</div>
           )}
         </div>
-      </div>
+      </Section>
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Viseme History</h2>
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Viseme History</h3>
         <div style={{
           background: '#1e1e1e',
           color: '#d4d4d4',
@@ -194,8 +209,10 @@ export function VisemeExample() {
             ))
           )}
         </div>
-      </div>
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
+      </Section>
+
+
+      <audio ref={audioRef} autoPlay hidden />
+    </SampleLayout>
   );
 }
