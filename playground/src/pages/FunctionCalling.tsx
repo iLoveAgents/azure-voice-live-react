@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ErrorPanel } from '../components';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function FunctionCalling() {
   const [logs, setLogs] = useState<string[]>([]);
@@ -168,7 +168,8 @@ export function FunctionCalling() {
         </ControlGroup>
       </Section>
 
-      <ConfigPanel title="Available Tools">
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Available Tools</h3>
         <div style={{ marginBottom: '12px' }}>
           <strong style={{ display: 'block', marginBottom: '4px' }}>get_weather</strong>
           <span style={{ fontSize: '13px', color: '#666' }}>
@@ -181,7 +182,7 @@ export function FunctionCalling() {
             Get current time and timezone. No parameters required.
           </span>
         </div>
-      </ConfigPanel>
+      </Section>
 
       <Section>
         <div style={{

@@ -1,11 +1,12 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
-export function AudioVisualizer() {
+export function AudioVisualizer(): JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const animationFrameRef = useRef<number>();
+  const [error, setError] = useState<string | null>(null);
 
   const config = createVoiceLiveConfig({
     connection: {
@@ -95,33 +96,46 @@ export function AudioVisualizer() {
     };
   }, [audioContext, audioStream]);
 
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     try {
+      setError(null);
       await connect();
       await startCapture();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
+  const handleStop = async (): Promise<void> => {
     await stopCapture();
     disconnect();
+    setError(null);
   };
 
+  const isConnected = connectionState === 'connected';
+
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Audio Visualizer</h1>
-      <p>Status: {connectionState}</p>
+    <SampleLayout
+      title="Audio Visualizer"
+      description="Real-time audio waveform visualization using Web Audio API. Shows the audio output stream from the assistant."
+    >
+      <ErrorPanel error={error} />
 
-      <div style={{ marginTop: '20px' }}>
-        <button onClick={handleStart} disabled={connectionState === 'connected'}>Start</button>
-        <button onClick={handleStop} disabled={connectionState !== 'connected'}>Stop</button>
-      </div>
+      <StatusBadge status={connectionState} />
 
-      <div style={{ marginTop: '30px' }}>
-        <h2>Audio Waveform</h2>
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected}>
+          Start Conversation
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '12px' }}>Audio Waveform</h3>
         <canvas
           ref={canvasRef}
           width={800}
@@ -134,9 +148,9 @@ export function AudioVisualizer() {
             maxWidth: '800px',
           }}
         />
-      </div>
+      </Section>
 
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
+      <audio ref={audioRef} autoPlay hidden />
+    </SampleLayout>
   );
 }

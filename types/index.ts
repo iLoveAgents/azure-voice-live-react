@@ -195,9 +195,9 @@ export interface VoiceLiveAvatarProps {
   canvasClassName?: string;
   /** Inline styles for the container */
   style?: React.CSSProperties;
-  /** Whether to enable chroma key (green screen removal) */
-  enableChromaKey?: boolean;
-  /** Chroma key configuration */
+  /** Whether to enable transparent background (removes green screen via chroma key). Default: true */
+  transparentBackground?: boolean;
+  /** Optional chroma key configuration for customizing background removal (color, threshold, etc.) */
   chromaKeyConfig?: ChromaKeyConfig;
   /** Callback when video metadata is loaded */
   onVideoReady?: () => void;

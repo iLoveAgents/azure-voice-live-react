@@ -1,10 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, createVoiceLiveConfig, withAvatar } from '@iloveagents/azure-voice-live-react';
+import { useState } from 'react';
+import { useVoiceLive, VoiceLiveAvatar, createVoiceLiveConfig, withAvatar } from '@iloveagents/azure-voice-live-react';
 import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
-export function AvatarBasic() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+export function AvatarBasic(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   const config = createVoiceLiveConfig({
@@ -23,23 +21,10 @@ export function AvatarBasic() {
     }),
   });
 
+  // Voice Live hook - mic capture is integrated and auto-starts!
   const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
-  useEffect(() => {
-    if (videoRef.current && videoStream) {
-      videoRef.current.srcObject = videoStream;
-      videoRef.current.play().catch(console.error);
-    }
-  }, [videoStream]);
-
-  useEffect(() => {
-    if (audioRef.current && audioStream) {
-      audioRef.current.srcObject = audioStream;
-      audioRef.current.play().catch(console.error);
-    }
-  }, [audioStream]);
-
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     try {
       setError(null);
       await connect();
@@ -50,7 +35,7 @@ export function AvatarBasic() {
     }
   };
 
-  const handleStop = () => {
+  const handleStop = (): void => {
     disconnect();
     setError(null);
   };
@@ -60,7 +45,7 @@ export function AvatarBasic() {
   return (
     <SampleLayout
       title="Basic Avatar"
-      description="Simple avatar with video stream rendering. Character: lisa, style: casual-sitting."
+      description="Simple avatar with video stream rendering using the VoiceLiveAvatar component. Character: lisa, style: casual-sitting."
     >
       <ErrorPanel error={error} />
 
@@ -77,27 +62,28 @@ export function AvatarBasic() {
 
       <Section>
         <div style={{
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0 auto',
           backgroundColor: '#f5f5f5',
           borderRadius: '8px',
           padding: '20px',
           display: 'flex',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          border: '1px solid #ddd'
         }}>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            style={{
-              width: '100%',
-              maxWidth: '600px',
-              borderRadius: '8px',
-              border: '1px solid #ddd',
-              backgroundColor: '#000'
-            }}
+          <VoiceLiveAvatar
+            videoStream={videoStream}
+            audioStream={audioStream}
+            transparentBackground={false}
+            loadingMessage="Avatar will appear here when connected"
+            style={{ width: '100%', borderRadius: '8px' }}
           />
         </div>
-        <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
       </Section>
+
     </SampleLayout>
   );
 }

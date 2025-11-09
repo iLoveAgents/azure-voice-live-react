@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { SampleLayout, StatusBadge, Section, ControlGroup, ConfigPanel, ConfigItem, ErrorPanel } from '../components';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 
 export function VoiceAdvanced(): JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -90,40 +90,14 @@ export function VoiceAdvanced(): JSX.Element {
 
       <StatusBadge status={connectionState} />
 
-      <Section>
-        <ControlGroup>
-          <button onClick={handleStart} disabled={isConnected}>
-            Start Conversation
-          </button>
-          <button onClick={handleStop} disabled={!isConnected}>
-            Stop
-          </button>
-        </ControlGroup>
-      </Section>
-
-      <ConfigPanel title="Active Configuration">
-        <ConfigItem label="Voice" value="en-US-Ava:DragonHDLatestNeural (HD)" />
-        <ConfigItem label="Voice Temperature" value="0.9" />
-        <ConfigItem label="Voice Rate" value="1.1x" />
-        <ConfigItem label="Turn Detection" value="Azure Semantic VAD" />
-        <ConfigItem label="Filler Word Removal" value="Enabled (removes 'um', 'uh', etc.)" />
-        <ConfigItem label="Barge-in" value="Enabled with auto-truncate" />
-        <ConfigItem label="Audio Sampling" value="24kHz" />
-        <ConfigItem label="Echo Cancellation" value="Server-side" />
-        <ConfigItem label="Noise Suppression" value="Azure Deep Noise Suppression" />
-        <ConfigItem label="Response Temperature" value="0.8" />
-      </ConfigPanel>
-
-      <Section>
-        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Features Demonstrated</h3>
-        <ul style={{ fontSize: '14px', color: '#666', lineHeight: '1.8', marginLeft: '20px' }}>
-          <li><strong>Azure Semantic VAD:</strong> Advanced voice activity detection with semantic understanding</li>
-          <li><strong>Filler Word Removal:</strong> Automatically removes hesitation sounds for cleaner input</li>
-          <li><strong>Barge-in Support:</strong> Interrupt the assistant mid-response with auto-truncation</li>
-          <li><strong>High-Quality Audio:</strong> 24kHz sampling with echo cancellation and deep noise suppression</li>
-          <li><strong>Manual Audio Capture:</strong> Direct control over microphone with useAudioCapture hook</li>
-        </ul>
-      </Section>
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected}>
+          Start Conversation
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
 
       <audio ref={audioRef} autoPlay hidden />
     </SampleLayout>

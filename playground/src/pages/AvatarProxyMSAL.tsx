@@ -1,21 +1,21 @@
-import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useVoiceLive, VoiceLiveAvatar, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { SampleLayout, StatusBadge, Section, ControlGroup, ErrorPanel } from '../components';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
 
-export function AvatarProxyMSAL() {
+export function AvatarProxyMSAL(): JSX.Element {
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const [error, setError] = useState<string | null>(null);
   const { instance, accounts } = useMsal();
 
-  const acquireToken = async () => {
+  const acquireToken = async (): Promise<void> => {
     if (accounts.length === 0) {
       try {
         setAuthError(null);
+        // Azure Cognitive Services scope for Entra ID authentication
         await instance.loginPopup({
           scopes: ['https://cognitiveservices.azure.com/.default'],
         });
@@ -86,40 +86,30 @@ export function AvatarProxyMSAL() {
     onAudioData: createAudioDataCallback(sendEvent),
   });
 
-  useEffect(() => {
-    if (videoRef.current && videoStream) {
-      videoRef.current.srcObject = videoStream;
-      videoRef.current.play().catch(console.error);
-    }
-  }, [videoStream]);
-
-  useEffect(() => {
-    if (audioRef.current && audioStream) {
-      audioRef.current.srcObject = audioStream;
-      audioRef.current.play().catch(console.error);
-    }
-  }, [audioStream]);
-
-  const handleStart = async () => {
+  const handleStart = async (): Promise<void> => {
     if (!wsUrl) {
-      alert('Waiting for authentication token...');
+      setError('Waiting for authentication token...');
       return;
     }
 
     try {
+      setError(null);
       await connect();
       await startCapture();
     } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to start';
+      setError(message);
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
+  const handleStop = async (): Promise<void> => {
     await stopCapture();
     disconnect();
+    setError(null);
   };
 
-  const handleSignOut = () => {
+  const handleSignOut = (): void => {
     instance.logoutPopup();
     setAccessToken(null);
     setWsUrl(null);
@@ -128,36 +118,66 @@ export function AvatarProxyMSAL() {
   const isConnected = connectionState === 'connected';
 
   return (
-    <div>
-      <Link to="/">← Back</Link>
-      <h1>Avatar - Secure Proxy (MSAL)</h1>
+    <SampleLayout
+      title="Avatar - Secure Proxy (MSAL/Entra ID)"
+      description="Avatar using Entra ID authentication with token-based proxy. User authenticates via Microsoft Entra ID, token passed to secure backend."
+    >
+      <ErrorPanel error={error || authError} />
 
-      {accounts.length === 0 ? (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Not signed in</p>
-          <button onClick={acquireToken}>Sign In</button>
-        </div>
-      ) : (
-        <div style={{ marginBottom: '1rem' }}>
-          <p>Signed in as: {accounts[0].username}</p>
-          <p>Token: {accessToken ? '✓' : '✗'}</p>
-          <button onClick={handleSignOut} style={{ marginBottom: '0.5rem' }}>Sign Out</button>
-        </div>
-      )}
+      <Section>
+        <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>Authentication</h3>
+        {accounts.length === 0 ? (
+          <div>
+            <p style={{ marginBottom: '8px', color: '#666' }}>Not signed in</p>
+            <button onClick={acquireToken}>Sign In with Microsoft</button>
+          </div>
+        ) : (
+          <div>
+            <p style={{ marginBottom: '4px' }}>
+              <strong>Signed in as:</strong> {accounts[0].username}
+            </p>
+            <p style={{ marginBottom: '8px' }}>
+              <strong>Token:</strong> {accessToken ? '✓ Acquired' : '✗ Not available'}
+            </p>
+            <button onClick={handleSignOut}>Sign Out</button>
+          </div>
+        )}
+      </Section>
 
-      {authError && <p style={{ color: '#c62828' }}>{authError}</p>}
-      <p>Status: {connectionState}</p>
-      <div>
-        <button onClick={handleStart} disabled={isConnected || !wsUrl}>Start</button>
-        <button onClick={handleStop} disabled={!isConnected}>Stop</button>
-      </div>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        style={{ width: '100%', maxWidth: '512px', background: '#000', marginTop: '1rem' }}
-      />
-      <audio ref={audioRef} autoPlay style={{ display: 'none' }} />
-    </div>
+      <StatusBadge status={connectionState} />
+
+      <ControlGroup>
+        <button onClick={handleStart} disabled={isConnected || !wsUrl}>
+          Start Avatar
+        </button>
+        <button onClick={handleStop} disabled={!isConnected}>
+          Stop
+        </button>
+      </ControlGroup>
+
+      <Section>
+        <div style={{
+          width: '100%',
+          maxWidth: '600px',
+          margin: '0 auto',
+          backgroundColor: '#f5f5f5',
+          borderRadius: '8px',
+          padding: '20px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '400px',
+          border: '1px solid #ddd'
+        }}>
+          <VoiceLiveAvatar
+            videoStream={videoStream}
+            audioStream={audioStream}
+            transparentBackground={false}
+            loadingMessage="Avatar will appear here when connected"
+            style={{ width: '100%', borderRadius: '8px' }}
+          />
+        </div>
+      </Section>
+    </SampleLayout>
   );
 }
