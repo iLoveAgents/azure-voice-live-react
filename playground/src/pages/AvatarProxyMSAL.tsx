@@ -1,5 +1,5 @@
 import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 import { useMsal } from '@azure/msal-react';
 import { InteractionRequiredAuthError } from '@azure/msal-browser';
@@ -79,12 +79,7 @@ export function AvatarProxyMSAL() {
     },
   });
 
-  const { connect, disconnect, connectionState, sendEvent, videoStream, audioStream } = useVoiceLive(config);
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
+  const { connect, disconnect, connectionState, videoStream, audioStream } = useVoiceLive(config);
 
   useEffect(() => {
     if (videoRef.current && videoStream) {
@@ -108,14 +103,12 @@ export function AvatarProxyMSAL() {
 
     try {
       await connect();
-      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
-    await stopCapture();
+  const handleStop = () => {
     disconnect();
   };
 

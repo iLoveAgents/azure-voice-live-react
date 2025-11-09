@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function FunctionCalling() {
@@ -98,7 +98,11 @@ export function FunctionCalling() {
       apiKey: import.meta.env.VITE_AZURE_SPEECH_KEY,
     },
     session: {
-      instructions: 'You are a helpful assistant. When the user asks about weather or time, use the available tools.',
+      instructions: 'You are a helpful assistant. When the user asks about weather or time, use the available tools. Keep responses brief.',
+      voice: {
+        name: 'en-US-AvaMultilingualNeural',
+        type: 'azure-standard',
+      },
       tools,
       toolChoice: 'auto',
     },
@@ -110,11 +114,6 @@ export function FunctionCalling() {
   });
 
   sendEventRef.current = sendEvent;
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
 
   const audioRef = useRef<HTMLAudioElement>(null);
 
@@ -129,16 +128,13 @@ export function FunctionCalling() {
     addLog('Starting...');
     try {
       await connect();
-      addLog('Connected');
-      await startCapture();
-      addLog('Mic started');
+      addLog('Connected - mic will auto-start');
     } catch (err) {
       addLog(`Error: ${err}`);
     }
   };
 
-  const handleStop = async () => {
-    await stopCapture();
+  const handleStop = () => {
     disconnect();
     addLog('Stopped');
   };

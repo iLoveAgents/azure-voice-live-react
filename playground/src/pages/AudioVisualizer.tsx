@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function AudioVisualizer() {
@@ -17,12 +17,7 @@ export function AudioVisualizer() {
     },
   });
 
-  const { connect, disconnect, connectionState, sendEvent, audioStream, audioContext } = useVoiceLive(config);
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
+  const { connect, disconnect, connectionState, audioStream, audioContext } = useVoiceLive(config);
 
   // Connect audio stream to audio element for playback
   useEffect(() => {
@@ -98,14 +93,12 @@ export function AudioVisualizer() {
   const handleStart = async () => {
     try {
       await connect();
-      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
-    await stopCapture();
+  const handleStop = () => {
     disconnect();
   };
 

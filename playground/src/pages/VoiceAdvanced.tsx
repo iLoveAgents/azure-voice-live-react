@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useVoiceLive, createVoiceLiveConfig } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 export function VoiceAdvanced(): JSX.Element {
@@ -46,12 +46,7 @@ export function VoiceAdvanced(): JSX.Element {
     },
   });
 
-  const { connect, disconnect, connectionState, sendEvent, audioStream } = useVoiceLive(config);
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
-  });
+  const { connect, disconnect, connectionState, audioStream } = useVoiceLive(config);
 
   useEffect(() => {
     if (audioRef.current && audioStream) {
@@ -63,14 +58,12 @@ export function VoiceAdvanced(): JSX.Element {
   const handleStart = async (): Promise<void> => {
     try {
       await connect();
-      await startCapture();
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async (): Promise<void> => {
-    await stopCapture();
+  const handleStop = (): void => {
     disconnect();
   };
 

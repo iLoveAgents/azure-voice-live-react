@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
-import { useVoiceLive, useAudioCapture, createVoiceLiveConfig, withViseme , createAudioDataCallback } from '@iloveagents/azure-voice-live-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { useVoiceLive, createVoiceLiveConfig, withViseme } from '@iloveagents/azure-voice-live-react';
 import { Link } from 'react-router-dom';
 
 interface VisemeData {
@@ -30,7 +30,7 @@ export function VisemeExample() {
     }),
   });
 
-  const { connect, disconnect, connectionState, sendEvent, getAudioPlaybackTime, audioStream } = useVoiceLive({
+  const { connect, disconnect, connectionState, getAudioPlaybackTime, audioStream } = useVoiceLive({
     ...config,
     onEvent: useCallback((event: any) => {
       if (event.type === 'response.animation_viseme.delta') {
@@ -46,11 +46,6 @@ export function VisemeExample() {
         visemeBufferRef.current = [];
       }
     }, []),
-  });
-
-  const { startCapture, stopCapture } = useAudioCapture({
-    sampleRate: 24000,
-    onAudioData: createAudioDataCallback(sendEvent),
   });
 
   // Connect audio stream to audio element
@@ -99,15 +94,13 @@ export function VisemeExample() {
   const handleStart = async () => {
     try {
       await connect();
-      await startCapture();
       setVisemeHistory([]);
     } catch (err) {
       console.error('Start error:', err);
     }
   };
 
-  const handleStop = async () => {
-    await stopCapture();
+  const handleStop = () => {
     disconnect();
   };
 
