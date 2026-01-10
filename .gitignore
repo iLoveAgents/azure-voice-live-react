@@ -31,3 +31,6 @@ Thumbs.db
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Live2D models (must be downloaded separately due to licensing)
+playground/public/models/

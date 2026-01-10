@@ -14,6 +14,7 @@ import { AvatarProxyMSAL } from './pages/AvatarProxyMSAL';
 import { FunctionCalling } from './pages/FunctionCalling';
 import { AudioVisualizer } from './pages/AudioVisualizer';
 import { VisemeExample } from './pages/VisemeExample';
+import { Live2DAvatarExample } from './pages/Live2DAvatarExample';
 import AgentService from './pages/AgentService';
 import AgentServiceAvatar from './pages/AgentServiceAvatar';
 
@@ -64,6 +65,7 @@ function App() {
           <Route path="/function-calling" element={<FunctionCalling />} />
           <Route path="/audio-visualizer" element={<AudioVisualizer />} />
           <Route path="/viseme" element={<VisemeExample />} />
+          <Route path="/live2d-avatar" element={<Live2DAvatarExample />} />
         </Routes>
       </BrowserRouter>
     </MsalProvider>

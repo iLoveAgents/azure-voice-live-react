@@ -757,6 +757,7 @@ The library includes a comprehensive playground with working examples for all fe
 - **[Function Calling](./playground/src/pages/FunctionCalling.tsx)** - Tool/function integration
 - **[Audio Visualizer](./playground/src/pages/AudioVisualizer.tsx)** - Real-time audio visualization
 - **[Viseme Animation](./playground/src/pages/VisemeExample.tsx)** - Custom avatar lip-sync
+- **[Live2D Avatar](./playground/src/pages/Live2DAvatarExample.tsx)** - Live2D Cubism 4 lip-sync ([setup required](#live2d-avatar-setup))
 - **[Agent Service](./playground/src/pages/AgentService.tsx)** - Azure AI Foundry Agent integration
 
 ### Running the Playground
@@ -768,6 +769,29 @@ npm run dev
 ```
 
 Open <http://localhost:3001> to explore all examples.
+
+### Live2D Avatar Setup
+
+The Live2D Avatar example requires downloading the model separately due to Live2D licensing restrictions.
+
+1. **Download the Kei model** from [Live2D Sample Models](https://www.live2d.com/en/learn/sample/)
+2. **Accept the license agreements** (Free Material License Agreement & Terms of Use)
+3. **Extract the model** to `playground/public/models/kei_vowels_pro/`
+
+The folder structure should look like:
+
+```text
+playground/public/models/kei_vowels_pro/
+├── kei_vowels_pro.model3.json
+├── kei_vowels_pro.moc3
+├── kei_vowels_pro.physics3.json
+├── kei_vowels_pro.cdi3.json
+├── kei_vowels_pro.2048/
+│   └── texture_00.png
+└── motions/
+```
+
+**Note:** The model files are excluded from git. Each developer must download and accept the license individually.
 
 ## Contributing
 

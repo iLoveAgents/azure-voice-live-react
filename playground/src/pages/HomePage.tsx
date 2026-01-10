@@ -92,6 +92,12 @@ const samples: Record<string, SampleInfo[]> = {
       title: 'Viseme Data',
       description: 'Capture viseme data for custom avatar mouth shapes (works with Standard voices only)',
       features: ['22 viseme types', 'Audio sync', 'Standard voices only']
+    },
+    {
+      path: '/live2d-avatar',
+      title: 'Live2D Avatar',
+      description: 'Real-time Live2D avatar animation using Azure viseme data with the Kei character model',
+      features: ['Live2D', 'Viseme sync', 'Kei model', 'Lip-sync']
     }
   ]
 };
