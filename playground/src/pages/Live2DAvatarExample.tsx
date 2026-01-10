@@ -141,6 +141,10 @@ export function Live2DAvatarExample(): JSX.Element {
   const appRef = useRef<PIXI.Application | null>(null);
   const modelRef = useRef<InstanceType<typeof Live2DModel> | null>(null);
 
+  // Smooth interpolation state for mouth parameters
+  const currentMouthParams = useRef({ mouthOpen: 0, a: 0, i: 0, u: 0, e: 0, o: 0 });
+  const targetMouthParams = useRef({ mouthOpen: 0, a: 0, i: 0, u: 0, e: 0, o: 0 });
+
   // ---------------------------------------------------------------------------
   // Azure Voice Live Configuration
   // ---------------------------------------------------------------------------
@@ -283,29 +287,59 @@ export function Live2DAvatarExample(): JSX.Element {
   // Viseme Application to Live2D Model
   // ---------------------------------------------------------------------------
 
+  /** Interpolation speed (0-1, higher = faster transitions) */
+  const LERP_SPEED = 0.3;
+
+  /** Linear interpolation helper */
+  const lerp = (current: number, target: number, t: number): number => {
+    return current + (target - current) * t;
+  };
+
   /**
-   * Apply a viseme to the Live2D model by setting mouth parameters.
-   * Uses the Cubism Core API to directly set parameter values.
+   * Set target viseme parameters for smooth interpolation.
    */
-  const applyVisemeToModel = useCallback((visemeId: number): void => {
+  const setTargetViseme = useCallback((visemeId: number): void => {
+    const params = VISEME_MAP[visemeId] ?? SILENT_VISEME;
+    targetMouthParams.current = {
+      mouthOpen: params.mouthOpen,
+      a: params.a,
+      i: params.i,
+      u: params.u,
+      e: params.e,
+      o: params.o,
+    };
+  }, []);
+
+  /**
+   * Apply interpolated mouth parameters to the Live2D model.
+   * Called every frame for smooth transitions.
+   */
+  const updateMouthParameters = useCallback((): void => {
     const model = modelRef.current;
-    // Access the internal Cubism Core model for parameter control
-    // Type assertion needed as pixi-live2d-display doesn't expose full typing
     const coreModel = (model as { internalModel?: { coreModel?: {
       setParameterValueById: (id: string, value: number) => void;
     } } })?.internalModel?.coreModel;
 
     if (!coreModel) return;
 
-    const params = VISEME_MAP[visemeId] ?? SILENT_VISEME;
+    const current = currentMouthParams.current;
+    const target = targetMouthParams.current;
 
-    // Set Kei model's vowel parameters
-    coreModel.setParameterValueById('ParamMouthOpenY', params.mouthOpen);
-    coreModel.setParameterValueById('ParamA', params.a);
-    coreModel.setParameterValueById('ParamI', params.i);
-    coreModel.setParameterValueById('ParamU', params.u);
-    coreModel.setParameterValueById('ParamE', params.e);
-    coreModel.setParameterValueById('ParamO', params.o);
+    // Smoothly interpolate each parameter
+    current.mouthOpen = lerp(current.mouthOpen, target.mouthOpen, LERP_SPEED);
+    current.a = lerp(current.a, target.a, LERP_SPEED);
+    current.i = lerp(current.i, target.i, LERP_SPEED);
+    current.u = lerp(current.u, target.u, LERP_SPEED);
+    current.e = lerp(current.e, target.e, LERP_SPEED);
+    current.o = lerp(current.o, target.o, LERP_SPEED);
+
+    // Apply interpolated values to model
+    coreModel.setParameterValueById('ParamMouthOpenY', current.mouthOpen);
+    coreModel.setParameterValueById('ParamA', current.a);
+    coreModel.setParameterValueById('ParamI', current.i);
+    coreModel.setParameterValueById('ParamU', current.u);
+    coreModel.setParameterValueById('ParamE', current.e);
+    coreModel.setParameterValueById('ParamO', current.o);
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -315,6 +349,7 @@ export function Live2DAvatarExample(): JSX.Element {
   /**
    * Animation loop that synchronizes viseme display with audio playback.
    * Runs via requestAnimationFrame for smooth, frame-accurate lip-sync.
+   * Uses interpolation for natural mouth movements.
    */
   useEffect(() => {
     const syncVisemes = (): void => {
@@ -332,12 +367,15 @@ export function Live2DAvatarExample(): JSX.Element {
           }
         }
 
-        // Apply viseme if it changed (use ref to avoid stale closure)
+        // Update target viseme when it changes
         if (activeViseme && activeViseme.viseme_id !== currentVisemeRef.current) {
           currentVisemeRef.current = activeViseme.viseme_id;
-          applyVisemeToModel(activeViseme.viseme_id);
+          setTargetViseme(activeViseme.viseme_id);
         }
       }
+
+      // Always update mouth params for smooth interpolation
+      updateMouthParameters();
 
       animationFrameRef.current = requestAnimationFrame(syncVisemes);
     };
@@ -349,7 +387,7 @@ export function Live2DAvatarExample(): JSX.Element {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [getAudioPlaybackTime, applyVisemeToModel]);
+  }, [getAudioPlaybackTime, setTargetViseme, updateMouthParameters]);
 
   // ---------------------------------------------------------------------------
   // Event Handlers
@@ -369,8 +407,8 @@ export function Live2DAvatarExample(): JSX.Element {
   const handleStop = (): void => {
     disconnect();
     setError(null);
-    // Reset model to closed mouth
-    applyVisemeToModel(0);
+    // Reset model to closed mouth (will smoothly animate closed)
+    setTargetViseme(0);
     currentVisemeRef.current = null;
   };
 
