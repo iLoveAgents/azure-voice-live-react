@@ -15,6 +15,9 @@ import { FunctionCalling } from './pages/FunctionCalling';
 import { AudioVisualizer } from './pages/AudioVisualizer';
 import { VisemeExample } from './pages/VisemeExample';
 import { Live2DAvatarExample } from './pages/Live2DAvatarExample';
+import { Live2DUnicornExample } from './pages/Live2DUnicornExample';
+import { Live2DRobotExample } from './pages/Live2DRobotExample';
+import { Avatar3DExample } from './pages/Avatar3DExample';
 import AgentService from './pages/AgentService';
 import AgentServiceAvatar from './pages/AgentServiceAvatar';
 
@@ -66,6 +69,9 @@ function App() {
           <Route path="/audio-visualizer" element={<AudioVisualizer />} />
           <Route path="/viseme" element={<VisemeExample />} />
           <Route path="/live2d-avatar" element={<Live2DAvatarExample />} />
+          <Route path="/live2d-unicorn" element={<Live2DUnicornExample />} />
+          <Route path="/live2d-robot" element={<Live2DRobotExample />} />
+          <Route path="/avatar-3d" element={<Avatar3DExample />} />
         </Routes>
       </BrowserRouter>
     </MsalProvider>

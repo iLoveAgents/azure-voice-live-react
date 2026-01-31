@@ -33,4 +33,4 @@ yarn-debug.log*
 yarn-error.log*
 
 # Live2D models (must be downloaded separately due to licensing)
-playground/public/models/
+playground/public/models/kei_vowels_pro
